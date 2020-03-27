@@ -64,6 +64,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/autosummary/
 
 # PyBuilder
 target/
@@ -100,3 +101,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Editor files
+*.swp
