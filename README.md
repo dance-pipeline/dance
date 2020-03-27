@@ -8,6 +8,12 @@
 Pipeline for generating datasets. Visit the
 [documentation](https://dance.readthedocs.io/) for more info.
 
+## Manifest
+
+- **dance** - source code
+- **devtools** - tools for people developing DANCE
+- **docs** - documentation (built with Sphinx)
+
 ## Contributing
 
 See [CONTRIBUTING.md](.github/CONTRIBUTING.md)
