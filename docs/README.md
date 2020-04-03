@@ -12,10 +12,10 @@ pip install -r docs/requirements.txt
 ```
 
 Run the following command to automatically serve the documentation at
-http://localhost:5500/:
+http://127.0.0.1:8000/:
 
 ```bash
-sphinx-reload docs/ --watch {dance,docs}/
+sphinx-autobuild --open-browser --watch dance/ docs/ docs/_build/html
 ```
 
 This command will also open a tab in your web browser for displaying the
