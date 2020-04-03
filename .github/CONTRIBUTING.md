@@ -10,6 +10,7 @@ to merge code changes into DANCE.
 * [How to contribute changes](#how-to-contribute-changes)
 * [Checklist for updates](#checklist-for-updates)
 * [Documentation](#documentation)
+* [Running Tests](#running-tests)
 * [Versioneer Auto-version](#versioneer-auto-version)
 * [Auto-Formatting](#auto-formatting)
 * [Codecov Code Coverage](#codecov-code-coverage)
@@ -47,6 +48,11 @@ to merge code changes into DANCE.
 
 For information on building the documentation (including setting up a server to
 automatically reload the docs), see [here](../docs/README.md).
+
+## Running Tests
+
+To run the tests, run `devtools/scripts/run_tests.sh` from the root of this
+repository.
 
 ## Versioneer Auto-version
 
