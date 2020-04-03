@@ -48,10 +48,13 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
+    'sphinx_automodapi.automodapi',
 ]
 
 autosummary_generate = True
+automodapi_toctreedirnm = 'api'
 napoleon_google_docstring = False
+napoleon_numpy_docstring = True
 napoleon_use_param = False
 napoleon_use_ivar = True
 
@@ -158,8 +161,8 @@ man_pages = [(master_doc, 'dance', 'DANCE Documentation', [author], 1)]
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'dance', 'DANCE Documentation', author, 'dance',
-     'Pipeline for generating datasets.', 'Miscellaneous'),
+    (master_doc, 'dance', 'DANCE Documentation', author, 'dance', 'Pipeline for generating datasets.',
+     'Miscellaneous'),
 ]
 
 # -- Extension configuration -------------------------------------------------
