@@ -15,7 +15,7 @@ Run the following command to automatically serve the documentation at
 http://localhost:5500/:
 
 ```bash
-sphinx-reload docs/ --watch dance/
+sphinx-reload docs/ --watch {dance,docs}/
 ```
 
 This command will also open a tab in your web browser for displaying the
