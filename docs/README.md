@@ -15,12 +15,12 @@ Run the following command to automatically serve the documentation at
 http://localhost:5500/:
 
 ```bash
-sphinx-reload docs/
+sphinx-reload docs/ --watch dance/
 ```
 
 This command will also open a tab in your web browser for displaying the
-documentation. As you make changes, the documentation will automatically update
-in your browser.
+documentation. As you make changes to your documentation, as well as to any code
+in `dance`, the documentation will automatically update in your browser.
 
 ## Advanced Usage
 
