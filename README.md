@@ -12,20 +12,20 @@ information on DANCE.
 
 ## Table of Contents
 
-<!-- toc -->
+<!-- vim-markdown-toc GFM -->
 
-- [Overview](#overview)
-- [Design](#design)
-- [Installation](#installation)
-- [Sample Usage](#sample-usage)
-- [Manifest](#manifest)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [Contributors](#contributors)
-- [Copyright](#copyright)
-- [Acknowledgements](#acknowledgements)
+* [Overview](#overview)
+* [Design](#design)
+* [Installation](#installation)
+* [Sample Usage](#sample-usage)
+* [Documentation](#documentation)
+* [Manifest](#manifest)
+* [Contributing](#contributing)
+* [Contributors](#contributors)
+* [Copyright](#copyright)
+* [Acknowledgements](#acknowledgements)
 
-<!-- tocstop -->
+<!-- vim-markdown-toc -->
 
 ## Overview
 
@@ -89,17 +89,17 @@ TODO
 
 TODO
 
-## Manifest
-
-- **dance** - source code
-- **devtools** - tools for people developing DANCE
-- **docs** - documentation (built with Sphinx)
-
 ## Documentation
 
 The complete documentation for DANCE is available at
 https://dance.readthedocs.io/. To build your own version of the documentation,
 see [docs/README.md](docs/README.md).
+
+## Manifest
+
+- **dance** - source code
+- **devtools** - tools for people developing DANCE
+- **docs** - documentation (built with Sphinx)
 
 ## Contributing
 

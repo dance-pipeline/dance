@@ -1,42 +1,89 @@
-# How to contribute
+# Contributing
 
-We welcome contributions from external contributors, and this document describes
-how to merge code changes into DANCE.
+We welcome contributions from external contributors. This document describes how
+to merge code changes into DANCE.
 
-## Getting Started
+## Table of Contents
 
-- Make sure you have a [GitHub account](https://github.com/signup/free).
-- [Fork](https://help.github.com/articles/fork-a-repo/) this repository on
-  GitHub.
-- On your local machine,
-  [clone](https://help.github.com/articles/cloning-a-repository/) your fork of
-  the repository.
+<!-- vim-markdown-toc GFM -->
 
-## Making Changes
+* [How to contribute changes](#how-to-contribute-changes)
+* [Checklist for updates](#checklist-for-updates)
+* [Documentation](#documentation)
+* [Versioneer Auto-version](#versioneer-auto-version)
+* [Auto-Formatting](#auto-formatting)
+* [Codecov Code Coverage](#codecov-code-coverage)
+* [LGTM Code Analysis](#lgtm-code-analysis)
+* [Devtools](#devtools)
 
-- Add some really awesome code to your local fork. It's usually a
-  [good idea](http://blog.jasonmeridth.com/posts/do-not-issue-pull-requests-from-your-master-branch/)
-  to make changes on a
-  [branch](https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/)
-  with the branch name relating to the feature you are going to add.
-- When you are ready for others to examine and comment on your new feature,
-  navigate to your fork of dance on GitHub and open a
-  [pull request](https://help.github.com/articles/using-pull-requests/) (PR).
-  Note that after you launch a PR from one of your fork's branches, all
-  subsequent commits to that branch will be added to the open pull request
-  automatically. Each commit added to the PR will be validated for mergability,
-  compilation and test suite compliance; the results of these tests will be
-  visible on the PR page.
-- If you're providing a new feature, you must add test cases and documentation.
-- When the code is ready to go, make sure you run the test suite using `pytest`.
-- When you're ready to be considered for merging, check the "Ready to go" box on
-  the PR page to let the DANCE devs know that the changes are complete. The code
-  will not be merged until this box is checked, the continuous integration
-  returns checkmarks, and multiple core developers give "Approved" reviews.
+<!-- vim-markdown-toc -->
 
-## Additional Resources
+## How to contribute changes
 
-- [General GitHub documentation](https://help.github.com/)
-- [PR best practices](http://codeinthehole.com/writing/pull-requests-and-other-good-practices-for-teams-using-github/)
-- [A guide to contributing to software packages](http://www.contribution-guide.org)
-- [Thinkful PR example](http://www.thinkful.com/learn/github-pull-request-tutorial/#Time-to-Submit-Your-First-PR)
+- Clone the repository if you have write access to the main repo, fork the
+  repository if you are a collaborator.
+- Make a new branch with `git checkout -b {your branch name}`
+- Make changes and test your code
+- Ensure that the test environment dependencies (`conda-envs`) line up with the
+  build and deploy dependencies (`conda-recipe/meta.yaml`)
+- Push the branch to the repo (either the main or your fork) with
+  `git push -u origin {your branch name}`
+  - Note that `origin` is the default name assigned to the remote, yours may be
+    different
+- Make a PR on GitHub with your changes
+- We'll review the changes and get your code into the repo after lively
+  discussion!
+
+## Checklist for updates
+
+- [ ] Make sure there is an/are issue(s) opened for your specific update
+- [ ] Create the PR, referencing the issue
+- [ ] Debug the PR as needed until tests pass
+- [ ] Tag the final, debugged version
+  - `git tag -a X.Y.Z [latest pushed commit] && git push --follow-tags`
+- [ ] Get the PR merged in
+
+## Documentation
+
+For information on building the documentation (including setting up a server to
+automatically reload the docs), see [here](../docs/README.md).
+
+## Versioneer Auto-version
+
+[Versioneer](https://github.com/warner/python-versioneer) will automatically
+infer what version is installed by looking at the `git` tags and how many
+commits ahead this version is. The format follows
+[PEP 440](https://www.python.org/dev/peps/pep-0440/) and has the regular
+expression of:
+
+```regexp
+\d+.\d+.\d+(?\+\d+-[a-z0-9]+)
+```
+
+If the version of this commit is the same as a `git` tag, the installed version
+is the same as the tag, e.g. `dance-0.1.2`, otherwise it will be appended with
+`+X` where `X` is the number of commits ahead from the last tag, and then
+`-YYYYYY` where the `Y`'s are replaced with the `git` commit hash.
+
+## Auto-Formatting
+
+Please auto-format your code with [YAPF](https://github.com/google/yapf).
+To install YAPF, run `pip install yapf`, and to run it on a file, use
+`yapf -i <FILE>.py`. YAPF will automatically detect the settings contained in
+`setup.cfg` and format your code appropriately. If you are using an editor such
+as vim, you may also want to look into using a YAPF plugin to automatically
+format your code as you write it.
+
+## Codecov Code Coverage
+
+We use [Codecov](https://codecov.io) to automatically check test coverage on
+PRs. Please make sure your code is reasonably well-covered by your tests.
+
+## LGTM Code Analysis
+
+We use [LGTM](https://lgtm.com) to perform static analysis on PRs and detect
+various programming mistakes. Please address feedback, if any, from LGTM.
+
+## Devtools
+
+You may wish to take a look at the [devtools](../devtools/README.md).
