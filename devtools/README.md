@@ -15,6 +15,8 @@ to such testing:
 - `travis-ci`: directory containing files for Travis CI
   - `before_install.sh`: Pip/Miniconda pre-package installation script for
     Travis
+  - `oe_license.txt.enc`: Encrypted Openeye license for running tests on Travis
+    CI
 
 ### Conda Environment
 
