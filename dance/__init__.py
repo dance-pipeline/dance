@@ -1,10 +1,10 @@
 """
 DANCE
-Pipeline for generating datasets.
+Pipeline for generating molecule datasets.
 """
 
-# Add imports here
-from .dance import *
+# Imports
+from .dance_pipeline import DancePipeline
 
 # Handle versioneer
 from ._version import get_versions

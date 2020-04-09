@@ -1,7 +1,5 @@
 API Documentation
 =================
 
-.. autosummary::
-   :toctree: autosummary
-
-   dance.canvas
+.. automodapi:: dance
+   :no-inheritance-diagram:
