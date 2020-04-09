@@ -57,3 +57,28 @@ class DancePipeline:
 
         self.database_type = database_type
         self.database_info = database_info
+
+    def filter(self, relevance_function, output_oeb: Union[str, pathlib.Path] = "filter_output.oeb"):
+        """Uses the ``relevance_function`` to choose molecules from the database.
+
+        Each molecule from the database is read into an OEMol, and the
+        ``relevance_function`` is used to determine whether the molecule is
+        relevant or not. If the molecule is relevant, it is saved to the
+        ``output_oeb`` file.
+
+        ``output_oeb`` is stored in the ``filter_output_oeb`` attribute as a
+        ``pathlib.Path`` for future reference by the pipeline.
+
+        Parameters
+        ----------
+        relevance_function : function(molecule) -> bool
+            A function which takes in a single OEMol and outputs a bool telling
+            whether or not the molecule is relevant
+        output_oeb : Union[str, pathlib.Path], optional
+            Name of an OEB (Openeye Binary) file for storing the relevant
+            molecules. If this file already exists, it will be overwritten!
+        """
+        pass
+
+    def _generate_molecules_from_database(self):
+        pass
