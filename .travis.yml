@@ -2,6 +2,9 @@ language: python
 
 # Run jobs on container-based infrastructure, can be overridden per job
 
+git:
+  depth: 1
+
 matrix:
   include:
     # Extra includes for OSX since python language is not available by default on OSX
