@@ -3,8 +3,10 @@
 Provides a pipeline for generating molecule datasets from a database in various
 formats.
 """
+import glob
 import pathlib
 from typing import Union
+from openeye import oechem
 
 
 class DancePipeline:
@@ -78,7 +80,25 @@ class DancePipeline:
             Name of an OEB (Openeye Binary) file for storing the relevant
             molecules. If this file already exists, it will be overwritten!
         """
-        pass
+        ofs = oechem.oemolostream(str(output_oeb))
+        for mol in self._generate_molecules_from_database():
+            if relevance_function(mol):
+                oechem.OEWriteMolecule(ofs, mol)
+        ofs.close()
 
-    def _generate_molecules_from_database(self):
-        pass
+    def _generate_molecules_from_database(self) -> oechem.OEMol:
+        """Generator which yields molecules from the database.
+
+        Information about the database is passed in via the ``database_type``
+        and ``database_info`` attributes of this class.
+        """
+        if self.database_type == "SMILES":
+            ifs = oechem.oemolistream(str(self.database_info))
+            for mol in ifs.GetOEMols():
+                yield mol
+        elif self.database_type == "MOL2_DIR":
+            for mol2file in glob.iglob(str(pathlib.Path(self.database_info) / "*.mol2")):
+                ifs = oechem.oemolistream(mol2file)
+                mol = oechem.OEMol()
+                oechem.OEReadMolecule(ifs, mol)
+                yield mol
