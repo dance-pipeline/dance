@@ -3,8 +3,8 @@
 Provides a pipeline for generating molecule datasets from a database in various
 formats.
 """
-
-_SUPPORTED_DATABASE_TYPES = {"SMILES", "MOL2_DIR"}
+import pathlib
+from typing import Union
 
 
 class DancePipeline:
@@ -16,37 +16,43 @@ class DancePipeline:
     possible values for ``database_type``, and the corresponding info that must
     be provided in ``database_info``.
 
-    +---------------+------------------------------------------------+
-    | database_type | database_info                                  |
-    +===============+================================================+
-    | SMILES        | The name of a file listing SMILES strings.     |
-    +---------------+------------------------------------------------+
-    | MOL2_DIR      | The name of a directory containing mol2 files. |
-    +---------------+------------------------------------------------+
+    +---------------+------------------------------------------------+-----------------------------+
+    | database_type | database_info                                  | type                        |
+    +===============+================================================+=============================+
+    | SMILES        | The name of a file listing SMILES strings.     | ``str`` or ``pathlib.Path`` |
+    +---------------+------------------------------------------------+-----------------------------+
+    | MOL2_DIR      | The name of a directory containing mol2 files. | ``str`` or ``pathlib.Path`` |
+    +---------------+------------------------------------------------+-----------------------------+
 
     .. note::
-        The pipeline does not load any molecules when initialized.
+        The pipeline does not load any molecules when initialized, so
+        initializing a pipeline is very cheap.
 
     Parameters
     ----------
-    database_type: str
+    database_type : str
         The type of database.
-    database_info
-        Info for the database.
+    database_info : Union[str, pathlib.Path]
+        Info for the database -- refer to above table for acceptable types.
 
     Attributes
     ----------
     database_type : str
         The type of database.
-    database_info : str
-        Info for the database.
-    filter_output_oeb : str
+    database_info : Union[str, pathlib.Path]
+        Info for the database -- refer to the above table for acceptable types.
+    filter_output_oeb : pathlib.Path
         Output OEB (Openeye Binary) filename for the :meth:`~filter` step.
-    fingerprint_output_csv : str
+    fingerprint_output_csv : pathlib.Path
         Output CSV filename for the :meth:`~assign_fingerprint` step.
+    SUPPORTED_DATABASE_TYPES : FrozenSet[str]
+        Set of database types supported by the pipeline.
     """
+
+    SUPPORTED_DATABASE_TYPES = frozenset(["SMILES", "MOL2_DIR"])
+
     def __init__(self, database_type: str, database_info):
-        if database_type not in _SUPPORTED_DATABASE_TYPES:
+        if database_type not in self.SUPPORTED_DATABASE_TYPES:
             raise RuntimeError(f"`{database_type}` is not a supported database type")
 
         self.database_type = database_type
