@@ -38,7 +38,7 @@ install:
     # Activate the test environment
   - conda activate test
     # Build and install package
-  - python setup.py develop --no-deps
+  - pip install --extra-index-url https://pypi.anaconda.org/openeye/simple -e .
 
 script:
   - devtools/scripts/run_tests.sh
