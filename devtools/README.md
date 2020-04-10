@@ -38,5 +38,3 @@ the previous categories
   - `create_conda_env.py`: Helper program for spinning up new conda environments
     based on a starter file with Python Version and Env. Name command-line
     options
-  - `run_tests.sh`: A script for running tests for `dance`. Intended to be run
-    from the root of the repository.

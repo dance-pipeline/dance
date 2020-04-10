@@ -51,8 +51,14 @@ automatically reload the docs), see [here](../docs/README.md).
 
 ## Running Tests
 
-To run the tests, run `devtools/scripts/run_tests.sh` from the root of this
-repository.
+To run the tests, run
+
+```bash
+pytest
+```
+
+from the root of this repository. The `setup.cfg` file automatically adds in
+several options for pytest; you may also add on other options too.
 
 ## Versioneer Auto-version
 
@@ -73,8 +79,8 @@ is the same as the tag, e.g. `dance-0.1.2`, otherwise it will be appended with
 
 ## Auto-Formatting
 
-Please auto-format your code with [YAPF](https://github.com/google/yapf).
-To install YAPF, run `pip install yapf`, and to run it on a file, use
+Please auto-format your code with [YAPF](https://github.com/google/yapf). To
+install YAPF, run `pip install yapf`, and to run it on a file, use
 `yapf -i <FILE>.py`. YAPF will automatically detect the settings contained in
 `setup.cfg` and format your code appropriately. If you are using an editor such
 as vim, you may also want to look into using a YAPF plugin to automatically
