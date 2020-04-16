@@ -83,11 +83,12 @@ class DancePipeline:
             molecules. If this file already exists, it will be overwritten!
         """
         self.filter_output_oeb = pathlib.Path(output_oeb)
-        ofs = oechem.oemolostream(str(output_oeb))
+
+        filtered_molecule_stream = oechem.oemolostream(str(output_oeb))
         for mol in self._generate_molecules_from_database():
             if relevance_function(mol):
-                oechem.OEWriteMolecule(ofs, mol)
-        ofs.close()
+                oechem.OEWriteMolecule(filtered_molecule_stream, mol)
+        filtered_molecule_stream.close()
 
     def _generate_molecules_from_database(self) -> oechem.OEMol:
         """Generator which yields molecules from the database.
