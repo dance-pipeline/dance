@@ -69,8 +69,8 @@ The pipeline consists of the following steps:
    controls the fingerprinting by providing a **fingerprint function**, which
    when given a single molecule, returns a fingerprint for it.
    1. Default fingerprinting options are provided.
-   1. Fingerprints need to be tuples of numeric values. This allows us to easily
-      order the molecules later on in the pipeline.
+   1. Fingerprints need to be tuples/lists of numeric values. This allows us to
+      easily order the molecules later on in the pipeline.
 3. **Select**: DANCE selects molecules with diverse fingerprints to create the
    final dataset.
    1. Specifically, this step sorts the molecules by their fingerprint and

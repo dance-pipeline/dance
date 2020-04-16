@@ -45,13 +45,20 @@ class DancePipeline:
         Info for the database -- refer to the above table for acceptable types.
     filter_output_oeb : pathlib.Path
         Output OEB (Openeye Binary) filename for the :meth:`~filter` step.
-    fingerprint_output_csv : pathlib.Path
-        Output CSV filename for the :meth:`~assign_fingerprint` step.
-    SUPPORTED_DATABASE_TYPES : FrozenSet[str]
-        Set of database types supported by the pipeline.
+    fingerprint_output_oeb : pathlib.Path
+        Output OEB filename for the :meth:`~assign_fingerprint` step.
     """
 
+    #: Set of database types supported by the pipeline.
     SUPPORTED_DATABASE_TYPES = frozenset(["SMILES", "MOL2_DIR"])
+
+    #: Name of the tag used to store the fingerprint length in the molecule
+    #: during the :meth:`~assign_fingerprint` step.
+    FINGERPRINT_LENGTH_NAME = "dance_fingerprint_length"
+
+    #: Prefix for the tags used to store the fingerprint values in the molecule
+    #: during the :meth:`~assign_fingerprint` step.
+    FINGERPRINT_VALUE_NAME = "dance_fingerprint_value"
 
     def __init__(self, database_type: str, database_info):
         if database_type not in self.SUPPORTED_DATABASE_TYPES:
@@ -106,3 +113,40 @@ class DancePipeline:
                 mol = oechem.OEMol()
                 oechem.OEReadMolecule(ifs, mol)
                 yield mol
+
+    def assign_fingerprint(self,
+                           fingerprint_function,
+                           output_oeb: Union[str, pathlib.Path] = "fingerprint_output.oeb"):
+        """Assigns a fingerprint to the molecules from the :meth:`~filter` step.
+
+        Each molecule is passed to the ``fingerprint_function`` to create a
+        fingerprint. This fingerprint is attached to the molecule, and the
+        molecule is saved to the ``output_oeb``.
+
+        Specifically, the fingerprints are stored as data entries in each
+        molecule and may be accessed later with ``OEMol.GetIntData()`` and
+        ``OEMol.GetDoubleData()``. The following data fields are stored in each
+        molecule:
+
+        - { :attr:`~FINGERPRINT_LENGTH_NAME` } (`int`) - the number of values in the
+          fingerprint
+        - { :attr:`~FINGERPRINT_VALUE_NAME` }_{i} (`float`) - the values of the
+          fingerprint, with i = [0,1,2,...,{ :attr:`~FINGERPRINT_LENGTH_NAME` } - 1]
+
+        Note that :attr:`~FINGERPRINT_LENGTH_NAME` and
+        :attr:`~FINGERPRINT_VALUE_NAME` are attributes of this class.
+
+        ``output_oeb`` is stored in the ``fingerprint_output_oeb`` attribute as
+        a ``pathlib.Path`` for future reference by the pipeline.
+
+        Parameters
+        ----------
+        fingerprint_function : function(molecule) -> array_like[float]
+            A function which provides the fingerprint for a single OEMol. This
+            fingerprint must be an array of floats.
+        output_oeb : Union[str, pathlib.Path], optional
+            Name of an OEB (Openeye Binary) file for storing the molecules along
+            with their fingerprints. If this file already exists, it will be
+            overwritten!
+        """
+        pass
