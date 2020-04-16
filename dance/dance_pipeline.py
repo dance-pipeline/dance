@@ -67,7 +67,7 @@ class DancePipeline:
         self.database_type = database_type
         self.database_info = database_info
         self.filter_output_oeb = None
-        self.fingerprint_output_csv = None
+        self.fingerprint_output_oeb = None
 
     def filter(self, relevance_function, output_oeb: Union[str, pathlib.Path] = "filter_output.oeb"):
         """Uses the ``relevance_function`` to choose molecules from the database.
@@ -149,4 +149,19 @@ class DancePipeline:
             with their fingerprints. If this file already exists, it will be
             overwritten!
         """
-        pass
+        self.fingerprint_output_oeb = output_oeb
+
+        filtered_molecule_stream = oechem.oemolistream(str(self.filter_output_oeb))
+        fingerprinted_molecule_stream = oechem.oemolostream(str(output_oeb))
+        for mol in filtered_molecule_stream.GetOEMols():
+            fingerprint = fingerprint_function(mol)
+            self._add_single_fingerprint(mol, fingerprint)
+            oechem.OEWriteMolecule(fingerprinted_molecule_stream, mol)
+        filtered_molecule_stream.close()
+        fingerprinted_molecule_stream.close()
+
+    def _add_single_fingerprint(self, mol: oechem.OEMol, fingerprint: "array-like of float"):
+        """Adds the fingerprint to the molecule in-place."""
+        mol.SetIntData(self.FINGERPRINT_LENGTH_NAME, len(fingerprint))
+        for i, val in enumerate(fingerprint):
+            mol.SetDoubleData(f"{self.FINGERPRINT_VALUE_NAME}_{i}", val)
