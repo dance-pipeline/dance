@@ -82,6 +82,17 @@ def test_init_raises_exception_with_bad_database_type():
 #
 
 
+def test_filter_sets_output_oeb_attribute(tmp_path):
+    smiles_file = tmp_path / "smiles.smi"
+    smiles_file.write_text("\n".join(TEST_SMILES))
+    output_oeb = tmp_path / "filter_output.oeb"
+
+    dp = DancePipeline("SMILES", smiles_file)
+    dp.filter(_relevant_always, output_oeb)
+
+    assert dp.filter_output_oeb == output_oeb
+
+
 def test_filters_from_smiles_database(tmp_path):
     smiles_file = tmp_path / "smiles.smi"
     smiles_file.write_text("\n".join(TEST_SMILES))

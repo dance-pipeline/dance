@@ -59,6 +59,8 @@ class DancePipeline:
 
         self.database_type = database_type
         self.database_info = database_info
+        self.filter_output_oeb = None
+        self.fingerprint_output_csv = None
 
     def filter(self, relevance_function, output_oeb: Union[str, pathlib.Path] = "filter_output.oeb"):
         """Uses the ``relevance_function`` to choose molecules from the database.
@@ -80,6 +82,7 @@ class DancePipeline:
             Name of an OEB (Openeye Binary) file for storing the relevant
             molecules. If this file already exists, it will be overwritten!
         """
+        self.filter_output_oeb = pathlib.Path(output_oeb)
         ofs = oechem.oemolostream(str(output_oeb))
         for mol in self._generate_molecules_from_database():
             if relevance_function(mol):
