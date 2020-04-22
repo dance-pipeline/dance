@@ -2,3 +2,6 @@ Sphinx
 sphinx-rtd-theme
 sphinx-autobuild
 sphinx-automodapi
+
+--extra-index-url https://pypi.anaconda.org/openeye/simple
+openeye-toolkits
