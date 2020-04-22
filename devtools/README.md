@@ -15,6 +15,8 @@ to such testing:
 - `travis-ci`: directory containing files for Travis CI
   - `before_install.sh`: Pip/Miniconda pre-package installation script for
     Travis
+  - `oe_license.txt.enc`: Encrypted Openeye license for running tests on Travis
+    CI
 
 ### Conda Environment
 
@@ -36,5 +38,3 @@ the previous categories
   - `create_conda_env.py`: Helper program for spinning up new conda environments
     based on a starter file with Python Version and Env. Name command-line
     options
-  - `run_tests.sh`: A script for running tests for `dance`. Intended to be run
-    from the root of the repository.

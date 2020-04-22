@@ -5,6 +5,10 @@ language: python
 git:
   depth: 1
 
+env:
+  global:
+    - OE_LICENSE="$HOME/oe_license.txt"
+
 matrix:
   include:
     # Extra includes for OSX since python language is not available by default on OSX
@@ -30,6 +34,10 @@ before_install:
     # Install the Python environment
   - source devtools/travis-ci/before_install.sh
   - python -V
+    # Openeye License
+  - openssl aes-256-cbc -K $encrypted_935501d0d612_key -iv
+    $encrypted_935501d0d612_iv -in devtools/travis-ci/oe_license.txt.enc -out
+    $OE_LICENSE -d
 
 install:
   # Create test environment for package
@@ -38,10 +46,10 @@ install:
     # Activate the test environment
   - conda activate test
     # Build and install package
-  - python setup.py develop --no-deps
+  - pip install --extra-index-url https://pypi.anaconda.org/openeye/simple -e .
 
 script:
-  - devtools/scripts/run_tests.sh
+  - pytest
 
 notifications:
   email: false

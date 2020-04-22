@@ -83,7 +83,11 @@ provide are the **relevance function** (in the Filter step) and the
 
 ## Installation
 
-TODO
+Clone the repository, then run:
+
+```
+pip install --extra-index-url https://pypi.anaconda.org/openeye/simple -e .
+```
 
 ## Sample Usage
 

@@ -18,7 +18,6 @@ try:
 except:
     long_description = "\n".join(short_description[2:])
 
-
 setup(
     # Self-descriptive entries which should always be present
     name='dance',
@@ -31,29 +30,25 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     license='MIT',
 
-    # Which Python importable modules should be included when your package is installed
-    # Handled automatically by setuptools. Use 'exclude' to prevent some specific
-    # subpackage(s) from being added, if needed
+    # Which Python importable modules should be included with DANCE upon
+    # installation.
     packages=find_packages(),
 
-    # Optional include package data to ship with your package
-    # Customize MANIFEST.in if the general case does not suit your needs
-    # Comment out this line to prevent the files from being packaged with your software
+    # Optional include package data to ship with DANCE -- Customize MANIFEST.in
+    # if necessary.
     include_package_data=True,
 
     # Allows `setup.py test` to work correctly with pytest
     setup_requires=[] + pytest_runner,
 
-    # Additional entries you may want simply uncomment the lines you want and fill in the data
-    # url='http://www.my_package.com',  # Website
-    # install_requires=[],              # Required packages, pulls from pip if needed; do not use for Conda deployment
-    # platforms=['Linux',
-    #            'Mac OS-X',
-    #            'Unix',
-    #            'Windows'],            # Valid platforms your code works on, adjust to your flavor
-    # python_requires=">=3.5",          # Python version restrictions
+    # Required packages for DANCE
+    install_requires=["openeye-toolkits"],
 
-    # Manual control if final package is compressible or not, set False to prevent the .egg from being made
-    # zip_safe=False,
-
+    # Additional info
+    url="https://github.com/btjanaka/dance/",
+    project_urls={
+        "Bug Tracker": "https://github.com/btjanaka/dance/issues/",
+        "Documentation": "https://dance.readthedocs.io/",
+        "Source Code": "https://github.com/btjanaka/dance/",
+    },
 )
