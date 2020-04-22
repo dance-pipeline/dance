@@ -1,9 +1,11 @@
 """Tests for DancePipeline."""
-from dance import DancePipeline
 import pathlib
+from typing import List
+
 import pytest
 from openeye import oechem
-from typing import List
+
+from dance import DancePipeline
 
 #
 # Utilities
@@ -77,7 +79,7 @@ def _relevant_if_contains_nitrogen(mol: oechem.OEMol) -> bool:
 #
 
 TEST_SMILES = ["N", "N#N", "O=C=O", "C#N"]
-TEST_NUM_ATOMS = [1, 2, 3, 2]  # Number of atoms in the molecules/SMILES above
+TEST_NUM_ATOMS_WITHOUT_EXPLICIT_HYDROGEN = [1, 2, 3, 2]  # Number of atoms in the molecules/SMILES above
 TEST_OEMOLS = [_oemol_from_smiles(smiles) for smiles in TEST_SMILES]
 TEST_CANONICAL_ISOMERIC_SMILES = _get_list_of_canonical_isomeric_smiles(TEST_SMILES)
 
@@ -191,7 +193,7 @@ def test_assigns_fingerprints_with_num_atoms_in_molecule(_pipeline_test_files):
     dp.assign_fingerprint(lambda mol: (mol.NumAtoms(), ), fingerprint_output_oeb)
 
     _assert_smiles_in_oeb_are_equal(fingerprint_output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
-    for mol, num_atoms in zip(_get_mols_from_oeb(fingerprint_output_oeb), TEST_NUM_ATOMS):
+    for mol, num_atoms in zip(_get_mols_from_oeb(fingerprint_output_oeb), TEST_NUM_ATOMS_WITHOUT_EXPLICIT_HYDROGEN):
         assert mol.GetIntData(dp.FINGERPRINT_LENGTH_NAME) == 1
         assert mol.GetDoubleData(f"{dp.FINGERPRINT_VALUE_NAME}_0") == num_atoms
 
@@ -207,7 +209,7 @@ def test_assigns_fingerprints_with_multiple_entries(_pipeline_test_files):
                           fingerprint_output_oeb)
 
     _assert_smiles_in_oeb_are_equal(fingerprint_output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
-    for mol, num_atoms in zip(_get_mols_from_oeb(fingerprint_output_oeb), TEST_NUM_ATOMS):
+    for mol, num_atoms in zip(_get_mols_from_oeb(fingerprint_output_oeb), TEST_NUM_ATOMS_WITHOUT_EXPLICIT_HYDROGEN):
         assert mol.GetIntData(dp.FINGERPRINT_LENGTH_NAME) == 4
         for i in range(3):
             assert mol.GetDoubleData(f"{dp.FINGERPRINT_VALUE_NAME}_{i}") == num_atoms - i
