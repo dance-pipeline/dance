@@ -6,6 +6,7 @@ formats.
 import glob
 import pathlib
 from typing import Union
+
 from openeye import oechem
 
 
@@ -47,6 +48,9 @@ class DancePipeline:
         Output OEB (Openeye Binary) filename for the :meth:`~filter` step.
     fingerprint_output_oeb : pathlib.Path
         Output OEB filename for the :meth:`~assign_fingerprint` step.
+    num_molecules : int
+        The number of molecules in the pipeline. This value is ``None`` until
+        :meth:`~filter` is called.
     """
 
     #: Set of database types supported by the pipeline.
@@ -68,6 +72,7 @@ class DancePipeline:
         self.database_info = database_info
         self.filter_output_oeb = None
         self.fingerprint_output_oeb = None
+        self.num_molecules = None
 
     def filter(self, relevance_function, output_oeb: Union[str, pathlib.Path] = "filter_output.oeb"):
         """Uses the ``relevance_function`` to choose molecules from the database.
@@ -78,7 +83,9 @@ class DancePipeline:
         ``output_oeb`` file.
 
         ``output_oeb`` is stored in the ``filter_output_oeb`` attribute as a
-        ``pathlib.Path`` for future reference by the pipeline.
+        ``pathlib.Path`` for future reference by the pipeline.  Also, the
+        ``num_molecules`` attribute is set to the number of molecules that were
+        marked as relevant.
 
         Parameters
         ----------
@@ -90,10 +97,12 @@ class DancePipeline:
             molecules. If this file already exists, it will be overwritten!
         """
         self.filter_output_oeb = pathlib.Path(output_oeb)
+        self.num_molecules = 0
 
         filtered_molecule_stream = oechem.oemolostream(str(output_oeb))
         for mol in self._generate_molecules_from_database():
             if relevance_function(mol):
+                self.num_molecules += 1
                 oechem.OEWriteMolecule(filtered_molecule_stream, mol)
         filtered_molecule_stream.close()
 

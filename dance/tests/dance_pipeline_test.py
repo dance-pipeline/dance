@@ -96,6 +96,11 @@ def test_init_raises_exception_with_bad_database_type():
         dp = DancePipeline("FOOBAR", "foobar.xyz")  # pylint: disable=unused-variable
 
 
+def test_initial_molecules_not_available():
+    dp = DancePipeline("SMILES", "foo.smi")
+    assert dp.num_molecules is None
+
+
 #
 # Filter tests
 #
@@ -121,7 +126,9 @@ def test_filters_from_smiles_database(tmp_path):
     dp.filter(_relevant_always, output_oeb)
 
     # After "filtering," the output oeb should have all the molecules that were
-    # originally inputted.
+    # originally inputted, and the `num_molecules` attribute should have been
+    # set correctly.
+    assert dp.num_molecules == len(TEST_SMILES)
     _assert_smiles_in_oeb_are_equal(output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
 
 
@@ -140,6 +147,7 @@ def test_filters_from_mol2_dir_database(tmp_path):
 
     # Even though this is a mol2dir, we still use SMILES to make sure the
     # molecules are equal, as we do not have a way to compare two OEMols.
+    assert dp.num_molecules == len(TEST_SMILES)
     _assert_smiles_in_oeb_are_equal(output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
 
 
@@ -154,6 +162,7 @@ def test_filters_molecules_with_relevance_function(tmp_path):
     dp = DancePipeline("SMILES", smiles_file)
     dp.filter(_relevant_if_contains_nitrogen, output_oeb)
 
+    assert dp.num_molecules == len(["N", "N#N", "C#N"])
     _assert_smiles_in_oeb_are_equal(output_oeb, \
         _get_list_of_canonical_isomeric_smiles(["N", "N#N", "C#N"]))
 
