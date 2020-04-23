@@ -7,6 +7,8 @@ from openeye import oechem
 
 from dance import DancePipeline
 
+# pylint: disable=missing-function-docstring,invalid-name
+
 #
 # Utilities
 #
@@ -67,6 +69,7 @@ _NITROGEN = 7
 
 def _relevant_always(mol: oechem.OEMol) -> bool:
     """Lets all molecules be marked as relevant."""
+    # pylint: disable=unused-argument
     return True
 
 
@@ -90,7 +93,7 @@ TEST_CANONICAL_ISOMERIC_SMILES = _get_list_of_canonical_isomeric_smiles(TEST_SMI
 
 def test_init_raises_exception_with_bad_database_type():
     with pytest.raises(RuntimeError):
-        dp = DancePipeline("FOOBAR", "foobar.xyz")
+        dp = DancePipeline("FOOBAR", "foobar.xyz")  # pylint: disable=unused-variable
 
 
 #
