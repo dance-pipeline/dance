@@ -3,7 +3,9 @@ DANCE
 Pipeline for generating datasets.
 """
 import sys
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
+
 import versioneer
 
 short_description = __doc__.split("\n")
@@ -42,7 +44,7 @@ setup(
     setup_requires=[] + pytest_runner,
 
     # Required packages for DANCE
-    install_requires=["openeye-toolkits"],
+    install_requires=["openeye-toolkits", "sortedcontainers", "numpy"],
 
     # Additional info
     url="https://github.com/btjanaka/dance/",
