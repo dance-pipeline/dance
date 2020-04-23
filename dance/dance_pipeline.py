@@ -19,13 +19,13 @@ class DancePipeline:
     possible values for ``database_type``, and the corresponding info that must
     be provided in ``database_info``.
 
-    +---------------+------------------------------------------------+-----------------------------+
-    | database_type | database_info                                  | type                        |
-    +===============+================================================+=============================+
-    | SMILES        | The name of a file listing SMILES strings.     | ``str`` or ``pathlib.Path`` |
-    +---------------+------------------------------------------------+-----------------------------+
-    | MOL2_DIR      | The name of a directory containing mol2 files. | ``str`` or ``pathlib.Path`` |
-    +---------------+------------------------------------------------+-----------------------------+
+    +---------------+-------------------------------------------------------------------------+
+    | database_type | database_info                                                           |
+    +===============+=========================================================================+
+    | SMILES        | The name of a file listing SMILES strings (`str` or `pathlib.Path`)     |
+    +---------------+-------------------------------------------------------------------------+
+    | MOL2_DIR      | The name of a directory containing mol2 files (`str` or `pathlib.Path`) |
+    +---------------+-------------------------------------------------------------------------+
 
     .. note::
         The pipeline does not load any molecules when initialized, so
@@ -48,9 +48,17 @@ class DancePipeline:
         Output OEB (Openeye Binary) filename for the :meth:`~filter` step.
     fingerprint_output_oeb : pathlib.Path
         Output OEB filename for the :meth:`~assign_fingerprint` step.
+    sorted_by_fingerprint_oeb : pathlib.Path
+        Output OEB filename for the molecules sorted by fingerprint in the
+        :meth:`~select` step.
     num_molecules : int
         The number of molecules in the pipeline. This value is ``None`` until
         :meth:`~filter` is called.
+
+    Raises
+    ------
+    RuntimeError
+        If the provided ``database_type`` is not supported.
     """
 
     #: Set of database types supported by the pipeline.
@@ -63,6 +71,9 @@ class DancePipeline:
     #: Prefix for the tags used to store the fingerprint values in the molecule
     #: during the :meth:`~assign_fingerprint` step.
     FINGERPRINT_VALUE_NAME = "dance_fingerprint_value"
+
+    #: Set of types which the pipeline supports for the final dataset.
+    SUPPORTED_DATASET_TYPES = frozenset(["SMILES"])
 
     def __init__(self, database_type: str, database_info):
         if database_type not in self.SUPPORTED_DATABASE_TYPES:
@@ -174,3 +185,52 @@ class DancePipeline:
         mol.SetIntData(self.FINGERPRINT_LENGTH_NAME, len(fingerprint))
         for i, val in enumerate(fingerprint):
             mol.SetDoubleData(f"{self.FINGERPRINT_VALUE_NAME}_{i}", val)
+
+    def select(self,
+               selection_frequency,
+               dataset_type,
+               dataset_info,
+               sorted_oeb: Union[str, pathlib.Path] = "sorted_by_fingerprint.oeb"):
+        """Chooses molecules based on their assigned fingerprints.
+
+        Specifically, this method sorts the molecules by their fingerprint,
+        storing the sorted molecules in ``sorted_oeb``.  It then selects every
+        ``selection_frequency``-th molecule, starting from 0. For example, if
+        ``selection_frequency = 4``, we select molecule ``0,4,8,...``
+
+        The selected molecules are stored in a format determined by the
+        ``dataset_type`` and ``dataset_info``, similar to the ``database_type``
+        and ``database_info`` passed in to ``__init__``. The following table
+        shows the possible values of ``dataset_type``, and the corresponding info
+        that is expected to be in ``dataset_info``
+
+        +--------------+-------------------------------------------------------------------------+
+        | dataset_type | dataset_info                                                            |
+        +==============+=========================================================================+
+        | SMILES       | The name of a file for writing SMILES strings (`str` or `pathlib.Path`) |
+        +--------------+-------------------------------------------------------------------------+
+
+        ``sorted_oeb`` is stored in the ``sorted_by_fingerprint_oeb`` attribute
+        as a ``pathlib.Path`` for future reference by the pipeline.
+
+        Parameters
+        ----------
+        selection_frequency : int
+            How often to select molecules.
+        dataset_type : str
+            The type of dataset.
+        dataset_info : Union[str, pathlib.Path]
+            Info for the dataset -- refer to above table for acceptable types.
+        sorted_oeb : Union[str, pathlib.Path], optional
+            Name of an OEB (Openeye Binary) file for storing the molecules
+            sorted by fingerprint. If this file already exists, it will be
+            overwritten!
+
+        Raises
+        ------
+        RuntimeError
+            If the provided ``dataset_type`` is not supported.
+        RuntimeError
+            If ``num_to_select`` is less than 1.
+        """
+        pass
