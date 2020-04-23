@@ -160,21 +160,27 @@ def test_filters_molecules_with_relevance_function(tmp_path):
 #
 
 
-def test_assign_fingerprint_sets_output_oeb_attribute(_pipeline_test_files):
-    smiles_file, filter_output_oeb, fingerprint_output_oeb = _pipeline_test_files
+@pytest.fixture
+def _pipeline_executed_until_filter(_pipeline_test_files):
+    """Provides a pipeline that has been executed up to and including the filter step.
 
+    Also provides several associated files.
+    """
+    smiles_file, filter_output_oeb, fingerprint_output_oeb = _pipeline_test_files
     dp = DancePipeline("SMILES", smiles_file)
     dp.filter(_relevant_always, filter_output_oeb)
-    dp.assign_fingerprint(lambda mol: (), fingerprint_output_oeb)
+    return dp, smiles_file, filter_output_oeb, fingerprint_output_oeb
 
+
+def test_assign_fingerprint_sets_output_oeb_attribute(_pipeline_executed_until_filter):
+    dp, smiles_file, filter_output_oeb, fingerprint_output_oeb = _pipeline_executed_until_filter
+    dp.assign_fingerprint(lambda mol: (), fingerprint_output_oeb)
     assert dp.fingerprint_output_oeb == fingerprint_output_oeb
 
 
-def test_assigns_fingerprints_with_no_content(_pipeline_test_files):
-    smiles_file, filter_output_oeb, fingerprint_output_oeb = _pipeline_test_files
+def test_assigns_fingerprints_with_no_content(_pipeline_executed_until_filter):
+    dp, smiles_file, filter_output_oeb, fingerprint_output_oeb = _pipeline_executed_until_filter
 
-    dp = DancePipeline("SMILES", smiles_file)
-    dp.filter(_relevant_always, filter_output_oeb)
     dp.assign_fingerprint(lambda mol: (), fingerprint_output_oeb)
 
     # Check that the pipeline kept all the molecules after the fingerprint step.
@@ -185,11 +191,9 @@ def test_assigns_fingerprints_with_no_content(_pipeline_test_files):
         assert mol.GetIntData(dp.FINGERPRINT_LENGTH_NAME) == 0
 
 
-def test_assigns_fingerprints_with_num_atoms_in_molecule(_pipeline_test_files):
-    smiles_file, filter_output_oeb, fingerprint_output_oeb = _pipeline_test_files
+def test_assigns_fingerprints_with_num_atoms_in_molecule(_pipeline_executed_until_filter):
+    dp, smiles_file, filter_output_oeb, fingerprint_output_oeb = _pipeline_executed_until_filter
 
-    dp = DancePipeline("SMILES", smiles_file)
-    dp.filter(_relevant_always, filter_output_oeb)
     dp.assign_fingerprint(lambda mol: (mol.NumAtoms(), ), fingerprint_output_oeb)
 
     _assert_smiles_in_oeb_are_equal(fingerprint_output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
@@ -198,11 +202,9 @@ def test_assigns_fingerprints_with_num_atoms_in_molecule(_pipeline_test_files):
         assert mol.GetDoubleData(f"{dp.FINGERPRINT_VALUE_NAME}_0") == num_atoms
 
 
-def test_assigns_fingerprints_with_multiple_entries(_pipeline_test_files):
-    smiles_file, filter_output_oeb, fingerprint_output_oeb = _pipeline_test_files
+def test_assigns_fingerprints_with_multiple_entries(_pipeline_executed_until_filter):
+    dp, smiles_file, filter_output_oeb, fingerprint_output_oeb = _pipeline_executed_until_filter
 
-    dp = DancePipeline("SMILES", smiles_file)
-    dp.filter(_relevant_always, filter_output_oeb)
     # The fingerprint is based on the number of atoms, along with a value of 100
     # at the end.
     dp.assign_fingerprint(lambda mol: (mol.NumAtoms(), mol.NumAtoms() - 1, mol.NumAtoms() - 2, 100),
