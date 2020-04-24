@@ -60,7 +60,6 @@ def _assert_ordered_smiles_in_oeb_are_equal(oeb: pathlib.Path, smiles: List[str]
     """Checks that the molecules in the oeb have the same SMILES as those in the
     list, and in the correct order."""
     outputted_smiles = [oechem.OEMolToSmiles(mol) for mol in _get_mols_from_oeb(oeb)]
-    print(outputted_smiles)
     assert smiles == outputted_smiles
 
 
@@ -145,6 +144,7 @@ def test_retrieves_correct_fingerprint_from_mol():
     mol.SetIntData(DancePipeline.FINGERPRINT_LENGTH_NAME, 4)
     for i, val in enumerate([2, 1, 8, 7]):
         mol.SetDoubleData(f"{DancePipeline.FINGERPRINT_VALUE_NAME}_{i}", val)
+
     assert np.all(DancePipeline.get_fingerprint_from_mol(mol) == np.array([2, 1, 8, 7]))
 
 
@@ -203,9 +203,6 @@ def test_filters_molecules_with_relevance_function(tmp_path):
     smiles_file.write_text("\n".join(TEST_SMILES))
     output_oeb = tmp_path / "filter_output.oeb"
 
-    for mol in TEST_OEMOLS:
-        print(mol.NumAtoms())
-
     dp = DancePipeline("SMILES", smiles_file)
     dp.filter(_relevant_if_contains_nitrogen, output_oeb)
 
@@ -227,14 +224,18 @@ def _pipeline_executed_until_filter(_pipeline_test_files):
     """
     (smiles_file, filter_output_oeb, fingerprint_output_oeb, smiles_dataset_file,
      sorted_by_fingerprint_oeb) = _pipeline_test_files
+
     dp = DancePipeline("SMILES", smiles_file)
     dp.filter(_relevant_always, filter_output_oeb)
+
     return dp, smiles_file, filter_output_oeb, fingerprint_output_oeb
 
 
 def test_assign_fingerprint_sets_output_oeb_attribute(_pipeline_executed_until_filter):
     (dp, smiles_file, filter_output_oeb, fingerprint_output_oeb) = _pipeline_executed_until_filter
+
     dp.assign_fingerprint(lambda mol: (), fingerprint_output_oeb)
+
     assert dp.fingerprint_output_oeb == fingerprint_output_oeb
 
 
@@ -294,9 +295,11 @@ def _pipeline_executed_until_fingerprint(_pipeline_test_files):
     """
     (smiles_file, filter_output_oeb, fingerprint_output_oeb, smiles_dataset_file,
      sorted_by_fingerprint_oeb) = _pipeline_test_files
+
     dp = DancePipeline("SMILES", smiles_file)
     dp.filter(_relevant_always, filter_output_oeb)
     dp.assign_fingerprint(lambda mol: (mol.NumAtoms(), ), fingerprint_output_oeb)
+
     return dp, smiles_file, filter_output_oeb, fingerprint_output_oeb, smiles_dataset_file, sorted_by_fingerprint_oeb
 
 
@@ -308,13 +311,16 @@ def test_select_raises_exception_with_bad_output_type(_pipeline_executed_until_f
 
 def test_select_raises_exception_with_bad_selection_freq(_pipeline_executed_until_fingerprint):
     (dp, *unused, smiles_dataset_file, unused2) = _pipeline_executed_until_fingerprint
+
     with pytest.raises(RuntimeError):
         dp.select(0, "SMILES", smiles_dataset_file)
 
 
 def test_select_sets_sorted_fingerprint_oeb_attribute(_pipeline_executed_until_fingerprint):
     (dp, *unused, smiles_dataset_file, sorted_by_fingerprint_oeb) = _pipeline_executed_until_fingerprint
+
     dp.select(1, "SMILES", smiles_dataset_file, sorted_by_fingerprint_oeb)
+
     assert dp.sorted_by_fingerprint_oeb == sorted_by_fingerprint_oeb
 
 
@@ -340,6 +346,30 @@ def test_select_only_certain_molecules(_pipeline_executed_until_fingerprint):
     # Setting the threshold to 3 ensures we use multiple files in the sorting.
     dp.select(3, "SMILES", smiles_dataset_file, sorted_by_fingerprint_oeb, in_memory_sorting_threshold=3)
 
+    _assert_smiles_in_file_are_equal(smiles_dataset_file, _get_list_of_canonical_isomeric_smiles(["N", "O=C=O"]))
+
+
+def test_select_with_longer_fingerprints(_pipeline_test_files):
+    (smiles_file, filter_output_oeb, fingerprint_output_oeb, smiles_dataset_file,
+     sorted_by_fingerprint_oeb) = _pipeline_test_files
+
+    dp = DancePipeline("SMILES", smiles_file)
+    dp.filter(_relevant_always, filter_output_oeb)
+
+    # Each fingerprint consists of (1, 1, num_atoms), to ensure that fingerprints
+    # are sorted correctly when the fingerprint is longer.
+    dp.assign_fingerprint(lambda mol: (1, 1, mol.NumAtoms()), fingerprint_output_oeb)
+    dp.select(3, "SMILES", smiles_dataset_file, sorted_by_fingerprint_oeb, in_memory_sorting_threshold=3)
+
+    # Check that the molecules are sorted by fingerprint.
+    outputted_smiles = \
+            [oechem.OEMolToSmiles(mol) for mol in _get_mols_from_oeb(sorted_by_fingerprint_oeb)]
+    assert outputted_smiles == \
+            _get_list_of_canonical_isomeric_smiles(["N", "N#N", "C#N", "O=C=O"]) or \
+           outputted_smiles == \
+            _get_list_of_canonical_isomeric_smiles(["N", "C#N", "N#N", "O=C=O"])
+
+    # Check that the correct molecules were selected.
     _assert_smiles_in_file_are_equal(smiles_dataset_file, _get_list_of_canonical_isomeric_smiles(["N", "O=C=O"]))
 
 

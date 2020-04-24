@@ -3,7 +3,6 @@ sphinx-rtd-theme
 sphinx-autobuild
 sphinx-automodapi
 
-numpy
 sortedcontainers
 --extra-index-url https://pypi.anaconda.org/openeye/simple
 openeye-toolkits

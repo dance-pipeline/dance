@@ -44,7 +44,7 @@ setup(
     setup_requires=[] + pytest_runner,
 
     # Required packages for DANCE
-    install_requires=["openeye-toolkits", "sortedcontainers", "numpy"],
+    install_requires=["openeye-toolkits", "sortedcontainers"],
 
     # Additional info
     url="https://github.com/btjanaka/dance/",

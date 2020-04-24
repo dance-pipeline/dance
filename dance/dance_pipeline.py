@@ -7,9 +7,8 @@ import glob
 import pathlib
 import shutil
 import tempfile
-from typing import Union
+from typing import Tuple, Union
 
-import numpy as np
 from openeye import oechem
 from sortedcontainers import SortedList
 
@@ -91,7 +90,7 @@ class DancePipeline:
         self.num_molecules = None
 
     @staticmethod
-    def get_fingerprint_from_mol(mol: oechem.OEMol) -> np.ndarray:
+    def get_fingerprint_from_mol(mol: oechem.OEMol) -> Tuple[float]:
         """Utility that retrieves a molecule's fingerprint and returns it as a tuple.
 
         Refer to :meth:`~assign_fingerprint` for how the fingerprint is stored
@@ -104,8 +103,8 @@ class DancePipeline:
 
         Returns
         -------
-        np.ndarray
-            A numpy array containing the fingerprint.
+        Tuple[float]
+            A tuple containing the fingerprint.
 
         Raises
         ------
@@ -122,10 +121,7 @@ class DancePipeline:
                 raise ValueError(f"Unable to retrieve fingerprint value at index {i}")
             return mol.GetDoubleData(name)
 
-        fingerprint = np.zeros(length)
-        for i in range(length):
-            fingerprint[i] = get_fingerprint_index(i)
-        return fingerprint
+        return tuple(get_fingerprint_index(i) for i in range(length))
 
     def filter(self, relevance_function, output_oeb: Union[str, pathlib.Path] = "filter_output.oeb"):
         """Uses the ``relevance_function`` to choose molecules from the database.
@@ -315,7 +311,7 @@ class DancePipeline:
     @staticmethod
     def _sort_molecules_by_fingerprint(input_oeb: pathlib.Path,
                                        output_oeb: pathlib.Path,
-                                       in_memory_sorting_threshold: int = 1000):
+                                       in_memory_sorting_threshold: int = 10000):
         """Sorts the molecules in ``input_oeb`` and writes them to ``output_oeb``.
 
         This method implements an external mergesort on the molecules (see
