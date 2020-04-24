@@ -3,7 +3,6 @@ import pathlib
 import random
 from typing import List
 
-import numpy as np
 import pytest
 from openeye import oechem
 
@@ -145,7 +144,7 @@ def test_retrieves_correct_fingerprint_from_mol():
     for i, val in enumerate([2, 1, 8, 7]):
         mol.SetDoubleData(f"{DancePipeline.FINGERPRINT_VALUE_NAME}_{i}", val)
 
-    assert np.all(DancePipeline.get_fingerprint_from_mol(mol) == np.array([2, 1, 8, 7]))
+    assert DancePipeline.get_fingerprint_from_mol(mol) == (2, 1, 8, 7)
 
 
 #
