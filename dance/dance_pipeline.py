@@ -29,6 +29,8 @@ class DancePipeline:
     +---------------+-------------------------------------------------------------------------+
     | MOL2_DIR      | The name of a directory containing mol2 files (`str` or `pathlib.Path`) |
     +---------------+-------------------------------------------------------------------------+
+    | SDF           | The name of an SDF file (`str` or `pathlib.Path`)                       |
+    +---------------+-------------------------------------------------------------------------+
 
     .. note::
         The pipeline does not load any molecules when initialized, so
@@ -65,7 +67,7 @@ class DancePipeline:
     """
 
     #: Set of database types supported by the pipeline.
-    SUPPORTED_DATABASE_TYPES = frozenset(["SMILES", "MOL2_DIR"])
+    SUPPORTED_DATABASE_TYPES = frozenset(["SMILES", "MOL2_DIR", "SDF"])
 
     #: Name of the tag used to store the fingerprint length in the molecule
     #: during the :meth:`~assign_fingerprint` step.
@@ -161,7 +163,7 @@ class DancePipeline:
         Information about the database is passed in via the ``database_type``
         and ``database_info`` attributes of this class.
         """
-        if self.database_type == "SMILES":
+        if self.database_type == "SMILES" or self.database_type == "SDF":
             ifs = oechem.oemolistream(str(self.database_info))
             for mol in ifs.GetOEMols():
                 yield mol
