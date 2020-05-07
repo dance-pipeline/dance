@@ -150,7 +150,7 @@ class DancePipeline:
 
         filtered_molecule_stream = oechem.oemolostream(str(output_oeb))
         for mol in self._generate_molecules_from_database():
-            if relevance_function(mol):
+            if relevance_function(oechem.OEMol(mol)):
                 self.num_molecules += 1
                 oechem.OEWriteMolecule(filtered_molecule_stream, mol)
         filtered_molecule_stream.close()
@@ -214,7 +214,7 @@ class DancePipeline:
         filtered_molecule_stream = oechem.oemolistream(str(self.filter_output_oeb))
         fingerprinted_molecule_stream = oechem.oemolostream(str(output_oeb))
         for mol in filtered_molecule_stream.GetOEMols():
-            fingerprint = fingerprint_function(mol)
+            fingerprint = fingerprint_function(oechem.OEMol(mol))
             self._add_single_fingerprint(mol, fingerprint)
             oechem.OEWriteMolecule(fingerprinted_molecule_stream, mol)
         filtered_molecule_stream.close()
