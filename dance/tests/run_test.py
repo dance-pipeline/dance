@@ -1,4 +1,4 @@
-"""Tests for run_dance."""
+"""Tests for run.py"""
 import random
 
 import pytest
