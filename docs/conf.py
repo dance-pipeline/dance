@@ -5,6 +5,8 @@
 # This file does only contain a selection of the most common options. For a
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/stable/config
+#
+# pylint: skip-file
 
 # -- Path setup --------------------------------------------------------------
 
@@ -15,9 +17,10 @@
 # In case the project was not installed
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
 
 import dance
+
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
@@ -48,7 +51,6 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
-    'sphinx_automodapi.automodapi',
 ]
 
 autosummary_generate = True
@@ -167,4 +169,7 @@ texinfo_documents = [
 
 # -- Extension configuration -------------------------------------------------
 
-autodoc_member_order = "bysource"
+autodoc_default_options = {
+    "members": True,
+    "member-order": "bysource",
+}

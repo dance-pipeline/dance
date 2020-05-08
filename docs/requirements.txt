@@ -1,7 +1,6 @@
-Sphinx
+Sphinx>=2.0.0
 sphinx-rtd-theme
 sphinx-autobuild
-sphinx-automodapi
 
 sortedcontainers
 --extra-index-url https://pypi.anaconda.org/openeye/simple
