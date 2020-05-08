@@ -1,84 +1,14 @@
 """Tests for DancePipeline."""
-import pathlib
 import random
-from typing import List
 
 import pytest
 from openeye import oechem
 
 from dance import DancePipeline
 
+from . import utils
+
 # pylint: disable=missing-function-docstring,invalid-name,unused-variable
-
-#
-# Utilities
-#
-
-
-def _oemol_from_smiles(smiles: str) -> oechem.OEMol:
-    """oechem.OESmilesToMol wrapper that does not require creating a new OEMol."""
-    mol = oechem.OEMol()
-    oechem.OESmilesToMol(mol, smiles)
-    return mol
-
-
-def _get_canonical_isomeric_smiles(smiles: str) -> str:
-    """Retrieve the canonical isomeric version of a SMILES string."""
-    mol = oechem.OEMol()
-    oechem.OESmilesToMol(mol, smiles)
-    return oechem.OEMolToSmiles(mol)
-
-
-def _get_list_of_canonical_isomeric_smiles(smiles_list: List[str]) -> List[str]:
-    return [_get_canonical_isomeric_smiles(smiles) for smiles in smiles_list]
-
-
-def _assert_smiles_in_file_are_equal(smiles_file: pathlib.Path, smiles: List[str]):
-    """Checks that the SMILES in the given file are equivalent to those in the list (unordered)."""
-    smiles_stream = oechem.oemolistream(str(smiles_file))
-    outputted_smiles = set(oechem.OEMolToSmiles(mol) \
-                            for mol in smiles_stream.GetOEMols())
-    assert set(smiles) == outputted_smiles
-
-
-def _get_mols_from_oeb(oeb: pathlib.Path) -> List[oechem.OEMol]:
-    """Returns an iterator over the molecules in the given OEB file."""
-    assert oeb.is_file()  # Make sure the file exists.
-    ifs = oechem.oemolistream(str(oeb))
-    return ifs.GetOEMols()
-
-
-def _assert_smiles_in_oeb_are_equal(oeb: pathlib.Path, smiles: List[str]):
-    """Checks that the molecules in the oeb have the same SMILES as those in the list."""
-    outputted_smiles = set(oechem.OEMolToSmiles(mol) \
-                            for mol in _get_mols_from_oeb(oeb))
-    assert set(smiles) == outputted_smiles
-
-
-def _assert_ordered_smiles_in_oeb_are_equal(oeb: pathlib.Path, smiles: List[str]):
-    """Checks that the molecules in the oeb have the same SMILES as those in the
-    list, and in the correct order."""
-    outputted_smiles = [oechem.OEMolToSmiles(mol) for mol in _get_mols_from_oeb(oeb)]
-    assert smiles == outputted_smiles
-
-
-@pytest.fixture
-def _pipeline_test_files(tmp_path):
-    """Fixture for easily creating files for testing.
-
-    Crates a SMILES file with the molecules from TEST_SMILES, an OEB filepath
-    for the filter step, an OEB filepath for the fingerprint step, a SMILES
-    filepath for outputting the final dataset, and an OEB filepath for storing
-    the molecules sorted by fingerprint.
-    """
-    smiles_file = tmp_path / "smiles.smi"
-    smiles_file.write_text("\n".join(TEST_SMILES))
-    filter_output_oeb = tmp_path / "filter_output.oeb"
-    fingerprint_output_oeb = tmp_path / "fingerprint_output.oeb"
-    smiles_dataset_file = tmp_path / "smiles_output.smi"
-    sorted_by_fingerprint_oeb = tmp_path / "sorted_by_fingerprint.oeb"
-    return smiles_file, filter_output_oeb, fingerprint_output_oeb, smiles_dataset_file, sorted_by_fingerprint_oeb
-
 
 #
 # Relevance functions
@@ -103,8 +33,8 @@ def _relevant_if_contains_nitrogen(mol: oechem.OEMol) -> bool:
 
 TEST_SMILES = ["N", "N#N", "O=C=O", "C#N"]
 TEST_NUM_ATOMS_WITHOUT_EXPLICIT_HYDROGEN = [1, 2, 3, 2]  # Number of atoms in the molecules/SMILES above
-TEST_OEMOLS = [_oemol_from_smiles(smiles) for smiles in TEST_SMILES]
-TEST_CANONICAL_ISOMERIC_SMILES = _get_list_of_canonical_isomeric_smiles(TEST_SMILES)
+TEST_OEMOLS = [utils.oemol_from_smiles(smiles) for smiles in TEST_SMILES]
+TEST_CANONICAL_ISOMERIC_SMILES = utils.get_list_of_canonical_isomeric_smiles(TEST_SMILES)
 
 #
 # Initialization tests
@@ -175,7 +105,7 @@ def test_filters_from_smiles_database(tmp_path):
     # originally inputted, and the `num_molecules` attribute should have been
     # set correctly.
     assert dp.num_molecules == len(TEST_SMILES)
-    _assert_smiles_in_oeb_are_equal(output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
+    utils.assert_smiles_in_oeb_are_equal(output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
 
 
 def test_filters_from_mol2_dir_database(tmp_path):
@@ -194,7 +124,7 @@ def test_filters_from_mol2_dir_database(tmp_path):
     # Even though this is a mol2dir, we still use SMILES to make sure the
     # molecules are equal, as we do not have a way to compare two OEMols.
     assert dp.num_molecules == len(TEST_SMILES)
-    _assert_smiles_in_oeb_are_equal(output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
+    utils.assert_smiles_in_oeb_are_equal(output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
 
 
 def test_filters_molecules_with_relevance_function(tmp_path):
@@ -206,8 +136,8 @@ def test_filters_molecules_with_relevance_function(tmp_path):
     dp.filter(_relevant_if_contains_nitrogen, output_oeb)
 
     assert dp.num_molecules == len(["N", "N#N", "C#N"])
-    _assert_smiles_in_oeb_are_equal(output_oeb, \
-        _get_list_of_canonical_isomeric_smiles(["N", "N#N", "C#N"]))
+    utils.assert_smiles_in_oeb_are_equal(output_oeb, \
+        utils.get_list_of_canonical_isomeric_smiles(["N", "N#N", "C#N"]))
 
 
 #
@@ -216,13 +146,15 @@ def test_filters_molecules_with_relevance_function(tmp_path):
 
 
 @pytest.fixture
-def _pipeline_executed_until_filter(_pipeline_test_files):
+def _pipeline_executed_until_filter(pipeline_test_files):
     """Provides a pipeline that has been executed up to and including the filter step.
 
     Also provides several associated files.
     """
     (smiles_file, filter_output_oeb, fingerprint_output_oeb, smiles_dataset_file,
-     sorted_by_fingerprint_oeb) = _pipeline_test_files
+     sorted_by_fingerprint_oeb) = pipeline_test_files
+
+    smiles_file.write_text("\n".join(TEST_SMILES))
 
     dp = DancePipeline("SMILES", smiles_file)
     dp.filter(_relevant_always, filter_output_oeb)
@@ -244,10 +176,10 @@ def test_assigns_fingerprints_with_no_content(_pipeline_executed_until_filter):
     dp.assign_fingerprint(lambda mol: (), fingerprint_output_oeb)
 
     # Check that the pipeline kept all the molecules after the fingerprint step.
-    _assert_smiles_in_oeb_are_equal(fingerprint_output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
+    utils.assert_smiles_in_oeb_are_equal(fingerprint_output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
 
     # Check that the data tags on the molecules are correct.
-    for mol in _get_mols_from_oeb(fingerprint_output_oeb):
+    for mol in utils.get_mols_from_oeb(fingerprint_output_oeb):
         assert mol.GetIntData(dp.FINGERPRINT_LENGTH_NAME) == 0
 
 
@@ -256,8 +188,9 @@ def test_assigns_fingerprints_with_num_atoms_in_molecule(_pipeline_executed_unti
 
     dp.assign_fingerprint(lambda mol: (mol.NumAtoms(), ), fingerprint_output_oeb)
 
-    _assert_smiles_in_oeb_are_equal(fingerprint_output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
-    for mol, num_atoms in zip(_get_mols_from_oeb(fingerprint_output_oeb), TEST_NUM_ATOMS_WITHOUT_EXPLICIT_HYDROGEN):
+    utils.assert_smiles_in_oeb_are_equal(fingerprint_output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
+    for mol, num_atoms in zip(utils.get_mols_from_oeb(fingerprint_output_oeb),
+                              TEST_NUM_ATOMS_WITHOUT_EXPLICIT_HYDROGEN):
         assert mol.GetIntData(dp.FINGERPRINT_LENGTH_NAME) == 1
         assert mol.GetDoubleData(f"{dp.FINGERPRINT_VALUE_NAME}_0") == num_atoms
 
@@ -270,8 +203,9 @@ def test_assigns_fingerprints_with_multiple_entries(_pipeline_executed_until_fil
     dp.assign_fingerprint(lambda mol: (mol.NumAtoms(), mol.NumAtoms() - 1, mol.NumAtoms() - 2, 100),
                           fingerprint_output_oeb)
 
-    _assert_smiles_in_oeb_are_equal(fingerprint_output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
-    for mol, num_atoms in zip(_get_mols_from_oeb(fingerprint_output_oeb), TEST_NUM_ATOMS_WITHOUT_EXPLICIT_HYDROGEN):
+    utils.assert_smiles_in_oeb_are_equal(fingerprint_output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
+    for mol, num_atoms in zip(utils.get_mols_from_oeb(fingerprint_output_oeb),
+                              TEST_NUM_ATOMS_WITHOUT_EXPLICIT_HYDROGEN):
         assert mol.GetIntData(dp.FINGERPRINT_LENGTH_NAME) == 4
         for i in range(3):
             assert mol.GetDoubleData(f"{dp.FINGERPRINT_VALUE_NAME}_{i}") == num_atoms - i
@@ -284,7 +218,7 @@ def test_assigns_fingerprints_with_multiple_entries(_pipeline_executed_until_fil
 
 
 @pytest.fixture
-def _pipeline_executed_until_fingerprint(_pipeline_test_files):
+def _pipeline_executed_until_fingerprint(pipeline_test_files):
     """Provides a pipeline that has been executed up to and including the assign_fingerprint step.
 
     The fingerprint function assigns a fingerprint consisting of the number of
@@ -293,7 +227,9 @@ def _pipeline_executed_until_fingerprint(_pipeline_test_files):
     Also provides several associated files.
     """
     (smiles_file, filter_output_oeb, fingerprint_output_oeb, smiles_dataset_file,
-     sorted_by_fingerprint_oeb) = _pipeline_test_files
+     sorted_by_fingerprint_oeb) = pipeline_test_files
+
+    smiles_file.write_text("\n".join(TEST_SMILES))
 
     dp = DancePipeline("SMILES", smiles_file)
     dp.filter(_relevant_always, filter_output_oeb)
@@ -330,13 +266,13 @@ def test_select_can_choose_every_molecule(_pipeline_executed_until_fingerprint):
     # Either ordering is okay for the sorted output, as both C#N and N#N have
     # two atoms (not counting explicit hydrogens, that is).
     outputted_smiles = \
-            [oechem.OEMolToSmiles(mol) for mol in _get_mols_from_oeb(sorted_by_fingerprint_oeb)]
+            [oechem.OEMolToSmiles(mol) for mol in utils.get_mols_from_oeb(sorted_by_fingerprint_oeb)]
     assert outputted_smiles == \
-            _get_list_of_canonical_isomeric_smiles(["N", "N#N", "C#N", "O=C=O"]) or \
+            utils.get_list_of_canonical_isomeric_smiles(["N", "N#N", "C#N", "O=C=O"]) or \
            outputted_smiles == \
-            _get_list_of_canonical_isomeric_smiles(["N", "C#N", "N#N", "O=C=O"])
+            utils.get_list_of_canonical_isomeric_smiles(["N", "C#N", "N#N", "O=C=O"])
 
-    _assert_smiles_in_file_are_equal(smiles_dataset_file, TEST_CANONICAL_ISOMERIC_SMILES)
+    utils.assert_smiles_in_file_are_equal(smiles_dataset_file, TEST_CANONICAL_ISOMERIC_SMILES)
 
 
 def test_select_only_certain_molecules(_pipeline_executed_until_fingerprint):
@@ -345,12 +281,15 @@ def test_select_only_certain_molecules(_pipeline_executed_until_fingerprint):
     # Setting the threshold to 3 ensures we use multiple files in the sorting.
     dp.select(3, "SMILES", smiles_dataset_file, sorted_by_fingerprint_oeb, in_memory_sorting_threshold=3)
 
-    _assert_smiles_in_file_are_equal(smiles_dataset_file, _get_list_of_canonical_isomeric_smiles(["N", "O=C=O"]))
+    utils.assert_smiles_in_file_are_equal(smiles_dataset_file,
+                                          utils.get_list_of_canonical_isomeric_smiles(["N", "O=C=O"]))
 
 
-def test_select_with_longer_fingerprints(_pipeline_test_files):
+def test_select_with_longer_fingerprints(pipeline_test_files):
     (smiles_file, filter_output_oeb, fingerprint_output_oeb, smiles_dataset_file,
-     sorted_by_fingerprint_oeb) = _pipeline_test_files
+     sorted_by_fingerprint_oeb) = pipeline_test_files
+
+    smiles_file.write_text("\n".join(TEST_SMILES))
 
     dp = DancePipeline("SMILES", smiles_file)
     dp.filter(_relevant_always, filter_output_oeb)
@@ -362,19 +301,20 @@ def test_select_with_longer_fingerprints(_pipeline_test_files):
 
     # Check that the molecules are sorted by fingerprint.
     outputted_smiles = \
-            [oechem.OEMolToSmiles(mol) for mol in _get_mols_from_oeb(sorted_by_fingerprint_oeb)]
+            [oechem.OEMolToSmiles(mol) for mol in utils.get_mols_from_oeb(sorted_by_fingerprint_oeb)]
     assert outputted_smiles == \
-            _get_list_of_canonical_isomeric_smiles(["N", "N#N", "C#N", "O=C=O"]) or \
+            utils.get_list_of_canonical_isomeric_smiles(["N", "N#N", "C#N", "O=C=O"]) or \
            outputted_smiles == \
-            _get_list_of_canonical_isomeric_smiles(["N", "C#N", "N#N", "O=C=O"])
+            utils.get_list_of_canonical_isomeric_smiles(["N", "C#N", "N#N", "O=C=O"])
 
     # Check that the correct molecules were selected.
-    _assert_smiles_in_file_are_equal(smiles_dataset_file, _get_list_of_canonical_isomeric_smiles(["N", "O=C=O"]))
+    utils.assert_smiles_in_file_are_equal(smiles_dataset_file,
+                                          utils.get_list_of_canonical_isomeric_smiles(["N", "O=C=O"]))
 
 
-def test_select_on_larger_dataset(_pipeline_test_files):
+def test_select_on_larger_dataset(pipeline_test_files):
     (smiles_file, filter_output_oeb, fingerprint_output_oeb, smiles_dataset_file,
-     sorted_by_fingerprint_oeb) = _pipeline_test_files
+     sorted_by_fingerprint_oeb) = pipeline_test_files
 
     # The pipeline does not filter out repeated molecules, so this is okay.
     smiles = ["N", "O=C=O", "C#N"] * 10
@@ -387,7 +327,7 @@ def test_select_on_larger_dataset(_pipeline_test_files):
     dp.assign_fingerprint(lambda mol: (mol.NumAtoms(), ), fingerprint_output_oeb)
     dp.select(10, "SMILES", smiles_dataset_file, sorted_by_fingerprint_oeb, in_memory_sorting_threshold=7)
 
-    _assert_ordered_smiles_in_oeb_are_equal(sorted_by_fingerprint_oeb, \
-            _get_list_of_canonical_isomeric_smiles(["N"] * 10 + ["C#N"] * 10 + ["O=C=O"] * 10))
-    _assert_smiles_in_file_are_equal(smiles_dataset_file, \
-            _get_list_of_canonical_isomeric_smiles(["N", "C#N", "O=C=O"]))
+    utils.assert_ordered_smiles_in_oeb_are_equal(sorted_by_fingerprint_oeb, \
+            utils.get_list_of_canonical_isomeric_smiles(["N"] * 10 + ["C#N"] * 10 + ["O=C=O"] * 10))
+    utils.assert_ordered_smiles_in_file_are_equal(smiles_dataset_file, \
+            utils.get_list_of_canonical_isomeric_smiles(["N", "C#N", "O=C=O"]))
