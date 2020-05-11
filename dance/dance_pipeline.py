@@ -233,7 +233,7 @@ class DancePipeline:
                dataset_type: str,
                dataset_info,
                sorted_oeb: Union[str, pathlib.Path] = "sorted_by_fingerprint.oeb",
-               in_memory_sorting_threshold=10000):
+               in_memory_sorting_threshold=25000):
         """Chooses molecules based on their assigned fingerprints.
 
         Specifically, this method sorts the molecules by their fingerprint,
@@ -313,7 +313,7 @@ class DancePipeline:
     @staticmethod
     def _sort_molecules_by_fingerprint(input_oeb: pathlib.Path,
                                        output_oeb: pathlib.Path,
-                                       in_memory_sorting_threshold: int = 10000):
+                                       in_memory_sorting_threshold: int = 25000):
         """Sorts the molecules in ``input_oeb`` and writes them to ``output_oeb``.
 
         This method implements an external mergesort on the molecules (see

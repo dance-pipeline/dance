@@ -62,7 +62,7 @@ DEFAULT_CONFIG = {
 
     # Number of molecules that can be sorted in memory at once. This is a
     # low-level parameter that you will likely not need to set.
-    "in_memory_sorting_threshold": 10000,
+    "in_memory_sorting_threshold": 25000,
 
     # Miscellaneous
     # -------------
