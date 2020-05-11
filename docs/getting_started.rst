@@ -99,6 +99,9 @@ takes in a single configuration dict with the fields defined in
 Example
 ```````
 
+(For the fully completed version of this script, see
+`here <https://github.com/btjanaka/dance/tree/master/examples/getting_started_example.py>`_)
+
 Say we would like to create a diverse dataset of molecules that have an oxygen
 in them. For the purposes of this example, we define "diverse" as meaning that
 the molecules have different numbers of atoms.  Meanwhile, our database is the
