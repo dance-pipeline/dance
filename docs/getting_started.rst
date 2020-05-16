@@ -221,3 +221,18 @@ Thus, our final code looks like this:
   run_dance(config)
 
 For more information on DANCE, view the API Documentation.
+
+Logging
+```````
+
+DANCE uses Python's ``logging`` module to provide information about the state
+of the pipeline. Most messages are of type ``INFO`` or ``DEBUG``, and as such
+will not be displayed on the console. To show this information on the console,
+change the logging level by adding this line before running DANCE:
+
+::
+
+  logging.getLogger().setLevel(logging.DEBUG)
+
+``logging.INFO`` may also be passed in if you do not wish to see the
+``DEBUG`` messages.
