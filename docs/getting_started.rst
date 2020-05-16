@@ -232,7 +232,7 @@ change the logging level by adding this line before running DANCE:
 
 ::
 
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger("dance").setLevel(logging.DEBUG)
 
 ``logging.INFO`` may also be passed in if you do not wish to see the
 ``DEBUG`` messages.
