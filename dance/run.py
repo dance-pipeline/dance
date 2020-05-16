@@ -63,6 +63,13 @@ DEFAULT_CONFIG = {
     # Number of molecules that can be sorted in memory at once. This is a
     # low-level parameter that you will likely not need to set.
     "in_memory_sorting_threshold": 25000,
+
+    # Miscellaneous
+    # -------------
+
+    # Directory for storing any temporary files. All temporary files are
+    # removed by the time the pipeline finishes.
+    "tmpdir": "/tmp",
 }
 # __sphinx_doc_end__
 
@@ -119,5 +126,6 @@ def run_dance(config: {}):
         config["dataset_type"],
         config["dataset_info"],
         config["sorted_by_fingerprint_oeb"],
+        config["tmpdir"],
         config["in_memory_sorting_threshold"],
     )

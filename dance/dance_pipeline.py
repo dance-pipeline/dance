@@ -253,6 +253,7 @@ class DancePipeline:
                dataset_type: str,
                dataset_info,
                sorted_oeb: Union[str, pathlib.Path] = "sorted_by_fingerprint.oeb",
+               tmpdir: Union[str, pathlib.Path] = "/tmp",
                in_memory_sorting_threshold=25000):
         """Chooses molecules based on their assigned fingerprints.
 
@@ -288,7 +289,11 @@ class DancePipeline:
             Name of an OEB (Openeye Binary) file for storing the molecules
             sorted by fingerprint. If this file already exists, it will be
             overwritten!
-        in_memory_sorting_threshold : int
+        tmpdir : Union[str, pathlib.Path], optional
+            Temporary directory for storing intermediate files during sorting.
+            All temporary files will be removed by the time the pipeline is
+            finished.
+        in_memory_sorting_threshold : int, optional
             The number of molecules that can be sorted in memory at once. This
             is a low-level parameter for the sorting algorithm, and most users
             should not have to deal with it. Note that if this threshold is
@@ -311,8 +316,12 @@ class DancePipeline:
 
         logger.info("Sorting molecules by fingerprint")
         self.sorted_by_fingerprint_oeb = pathlib.Path(sorted_oeb)
-        self._sort_molecules_by_fingerprint(self.fingerprint_output_oeb, self.sorted_by_fingerprint_oeb,
-                                            in_memory_sorting_threshold)
+        self._sort_molecules_by_fingerprint(
+            self.fingerprint_output_oeb,
+            self.sorted_by_fingerprint_oeb,
+            pathlib.Path(tmpdir),
+            in_memory_sorting_threshold,
+        )
         sorted_molstream = oechem.oemolistream(str(self.sorted_by_fingerprint_oeb))
 
         # Open any necessary files for outputting the dataset. This will vary by
@@ -337,9 +346,8 @@ class DancePipeline:
         logger.info("Dataset selection completed")
 
     @staticmethod
-    def _sort_molecules_by_fingerprint(input_oeb: pathlib.Path,
-                                       output_oeb: pathlib.Path,
-                                       in_memory_sorting_threshold: int = 25000):
+    def _sort_molecules_by_fingerprint(input_oeb: pathlib.Path, output_oeb: pathlib.Path, tmpdir: pathlib.Path,
+                                       in_memory_sorting_threshold: int):
         """Sorts the molecules in ``input_oeb`` and writes them to ``output_oeb``.
 
         This method implements an external mergesort on the molecules (see
@@ -355,9 +363,11 @@ class DancePipeline:
             The output molecules.
         in_memory_sorting_threshold : int
             The number of molecules that can be sorted in memory.
+        tmpdir: pathlib.Path
+            Directory in which to create any temporary files.
         """
         # Create a temporary directory for storing sorted chunks of molecules.
-        tmpdir = pathlib.Path(tempfile.mkdtemp())
+        chunk_dir = pathlib.Path(tempfile.mkdtemp(dir=tmpdir))
 
         # Break the original input file into chunks. Sort each chunk and store
         # it in a temporary file.
@@ -367,7 +377,7 @@ class DancePipeline:
 
         def sort_and_save_molecules_in_chunk(chunk_idx):
             # Save the molecules in the current chunk to a temporary file.
-            chunk_file = tmpdir / f"chunk_{chunk_idx}.oeb"
+            chunk_file = chunk_dir / f"chunk_{chunk_idx}.oeb"
             chunk_stream = oechem.oemolostream(str(chunk_file))
             molecules_in_chunk.sort()
             for _, mol in molecules_in_chunk:
@@ -400,7 +410,7 @@ class DancePipeline:
 
         # Build the priority queue.
         for chunk_idx in range(num_chunks):
-            chunk_file = tmpdir / f"chunk_{chunk_idx}.oeb"
+            chunk_file = chunk_dir / f"chunk_{chunk_idx}.oeb"
             chunk_stream = oechem.oemolistream(str(chunk_file))
             mol = oechem.OEMol()
             oechem.OEReadMolecule(chunk_stream, mol)
@@ -425,4 +435,4 @@ class DancePipeline:
         output_stream.close()
 
         # Clean up the temporary directory.
-        shutil.rmtree(str(tmpdir))
+        shutil.rmtree(str(chunk_dir))
