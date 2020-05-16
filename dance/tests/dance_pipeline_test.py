@@ -126,6 +126,24 @@ def test_filters_from_sdf_database(tmp_path):
     utils.assert_smiles_in_oeb_are_equal(output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
 
 
+def test_filters_from_oeb_database(tmp_path):
+    # Create the OEB file and write the molecules to it.
+    oeb_file = tmp_path / "molecules.oeb"
+    oeb_stream = oechem.oemolostream(str(oeb_file))
+    for smiles in TEST_SMILES:
+        mol = utils.oemol_from_smiles(smiles)
+        oechem.OEWriteMolecule(oeb_stream, mol)
+    oeb_stream.close()
+
+    output_oeb = tmp_path / "filter_output.oeb"
+
+    dp = DancePipeline("OEB", oeb_file)
+    dp.filter(_relevant_always, output_oeb)
+
+    assert dp.num_molecules == len(TEST_SMILES)
+    utils.assert_smiles_in_oeb_are_equal(output_oeb, TEST_CANONICAL_ISOMERIC_SMILES)
+
+
 def test_filters_from_mol2_dir_database(tmp_path):
     mol2dir = tmp_path / "molecules"
     mol2dir.mkdir()
