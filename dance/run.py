@@ -62,13 +62,14 @@ DEFAULT_CONFIG = {
 
     # Number of molecules that can be sorted in memory at once. This is a
     # low-level parameter that you will likely not need to set.
-    "in_memory_sorting_threshold": 10000,
+    "in_memory_sorting_threshold": 25000,
 
     # Miscellaneous
     # -------------
 
-    # Whether to print information about pipeline execution.
-    "verbose": True,
+    # Directory for storing any temporary files. All temporary files are
+    # removed by the time the pipeline finishes.
+    "tmpdir": "/tmp",
 }
 # __sphinx_doc_end__
 
@@ -104,22 +105,27 @@ def run_dance(config: {}):
     if len(unspecified_fields) > 0:
         raise RuntimeError(f"The following fields were not specified in your configuration: {unspecified_fields}")
 
-    def print_if_verbose(msg):
-        if config["verbose"]: print("DANCE: " + msg)
-
     #
     # Run the pipeline.
     #
 
-    print_if_verbose("Initializing pipeline")
-    pipeline = DancePipeline(config["database_type"], config["database_info"])
-
-    print_if_verbose("Filtering molecules")
-    pipeline.filter(config["relevance_function"], config["filter_output_oeb"])
-
-    print_if_verbose("Assigning fingerprints")
-    pipeline.assign_fingerprint(config["fingerprint_function"], config["fingerprint_output_oeb"])
-
-    print_if_verbose("Selecting molecules for final dataset")
-    pipeline.select(config["selection_frequency"], config["dataset_type"], config["dataset_info"],
-                    config["sorted_by_fingerprint_oeb"], config["in_memory_sorting_threshold"])
+    pipeline = DancePipeline(
+        config["database_type"],
+        config["database_info"],
+    )
+    pipeline.filter(
+        config["relevance_function"],
+        config["filter_output_oeb"],
+    )
+    pipeline.assign_fingerprint(
+        config["fingerprint_function"],
+        config["fingerprint_output_oeb"],
+    )
+    pipeline.select(
+        config["selection_frequency"],
+        config["dataset_type"],
+        config["dataset_info"],
+        config["sorted_by_fingerprint_oeb"],
+        config["tmpdir"],
+        config["in_memory_sorting_threshold"],
+    )

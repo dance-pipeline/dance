@@ -4,6 +4,7 @@ Provides a pipeline for generating molecule datasets from a database in various
 formats.
 """
 import glob
+import logging
 import pathlib
 import shutil
 import tempfile
@@ -11,6 +12,9 @@ from typing import Tuple, Union
 
 from openeye import oechem
 from sortedcontainers import SortedList
+
+# Configure logger.
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class DancePipeline:
@@ -28,6 +32,10 @@ class DancePipeline:
     | SMILES        | The name of a file listing SMILES strings (`str` or `pathlib.Path`)     |
     +---------------+-------------------------------------------------------------------------+
     | MOL2_DIR      | The name of a directory containing mol2 files (`str` or `pathlib.Path`) |
+    +---------------+-------------------------------------------------------------------------+
+    | SDF           | The name of an SDF file (`str` or `pathlib.Path`)                       |
+    +---------------+-------------------------------------------------------------------------+
+    | OEB           | The name of an OEB file (`str` or `pathlib.Path`)                       |
     +---------------+-------------------------------------------------------------------------+
 
     .. note::
@@ -65,7 +73,7 @@ class DancePipeline:
     """
 
     #: Set of database types supported by the pipeline.
-    SUPPORTED_DATABASE_TYPES = frozenset(["SMILES", "MOL2_DIR"])
+    SUPPORTED_DATABASE_TYPES = frozenset(["SMILES", "MOL2_DIR", "SDF", "OEB"])
 
     #: Name of the tag used to store the fingerprint length in the molecule
     #: during the :meth:`~assign_fingerprint` step.
@@ -79,6 +87,8 @@ class DancePipeline:
     SUPPORTED_DATASET_TYPES = frozenset(["SMILES"])
 
     def __init__(self, database_type: str, database_info):
+        logger.info("Initializing pipeline")
+
         if database_type not in self.SUPPORTED_DATABASE_TYPES:
             raise RuntimeError(f"`{database_type}` is not a supported database type")
 
@@ -145,15 +155,22 @@ class DancePipeline:
             Name of an OEB (Openeye Binary) file for storing the relevant
             molecules. If this file already exists, it will be overwritten!
         """
+        logger.info("Filtering molecules")
+
         self.filter_output_oeb = pathlib.Path(output_oeb)
         self.num_molecules = 0
 
         filtered_molecule_stream = oechem.oemolostream(str(output_oeb))
-        for mol in self._generate_molecules_from_database():
-            if relevance_function(mol):
+        for idx, mol in enumerate(self._generate_molecules_from_database()):
+            if relevance_function(oechem.OEMol(mol)):
+                logger.debug("Molecule %d relevant!", idx + 1)
                 self.num_molecules += 1
                 oechem.OEWriteMolecule(filtered_molecule_stream, mol)
+            else:
+                logger.debug("Molecule %d not relevant", idx + 1)
         filtered_molecule_stream.close()
+
+        logger.info("Molecules after filtering: %d", self.num_molecules)
 
     def _generate_molecules_from_database(self) -> oechem.OEMol:
         """Generator which yields molecules from the database.
@@ -161,7 +178,7 @@ class DancePipeline:
         Information about the database is passed in via the ``database_type``
         and ``database_info`` attributes of this class.
         """
-        if self.database_type == "SMILES":
+        if self.database_type in ["SMILES", "SDF", "OEB"]:
             ifs = oechem.oemolistream(str(self.database_info))
             for mol in ifs.GetOEMols():
                 yield mol
@@ -209,16 +226,21 @@ class DancePipeline:
             with their fingerprints. If this file already exists, it will be
             overwritten!
         """
+        logger.info("Assigning fingerprints")
+
         self.fingerprint_output_oeb = pathlib.Path(output_oeb)
 
         filtered_molecule_stream = oechem.oemolistream(str(self.filter_output_oeb))
         fingerprinted_molecule_stream = oechem.oemolostream(str(output_oeb))
-        for mol in filtered_molecule_stream.GetOEMols():
-            fingerprint = fingerprint_function(mol)
+        for idx, mol in enumerate(filtered_molecule_stream.GetOEMols()):
+            logger.debug("Assigning fingerprint to molecule %d / %d", idx + 1, self.num_molecules)
+            fingerprint = fingerprint_function(oechem.OEMol(mol))
             self._add_single_fingerprint(mol, fingerprint)
             oechem.OEWriteMolecule(fingerprinted_molecule_stream, mol)
         filtered_molecule_stream.close()
         fingerprinted_molecule_stream.close()
+
+        logger.info("%d fingerprints assigned", self.num_molecules)
 
     def _add_single_fingerprint(self, mol: oechem.OEMol, fingerprint: "array-like of float"):
         """Adds the fingerprint to the molecule in-place."""
@@ -231,7 +253,8 @@ class DancePipeline:
                dataset_type: str,
                dataset_info,
                sorted_oeb: Union[str, pathlib.Path] = "sorted_by_fingerprint.oeb",
-               in_memory_sorting_threshold=10000):
+               tmpdir: Union[str, pathlib.Path] = "/tmp",
+               in_memory_sorting_threshold=25000):
         """Chooses molecules based on their assigned fingerprints.
 
         Specifically, this method sorts the molecules by their fingerprint,
@@ -266,7 +289,11 @@ class DancePipeline:
             Name of an OEB (Openeye Binary) file for storing the molecules
             sorted by fingerprint. If this file already exists, it will be
             overwritten!
-        in_memory_sorting_threshold : int
+        tmpdir : Union[str, pathlib.Path], optional
+            Temporary directory for storing intermediate files during sorting.
+            All temporary files will be removed by the time the pipeline is
+            finished.
+        in_memory_sorting_threshold : int, optional
             The number of molecules that can be sorted in memory at once. This
             is a low-level parameter for the sorting algorithm, and most users
             should not have to deal with it. Note that if this threshold is
@@ -280,14 +307,21 @@ class DancePipeline:
         RuntimeError
             If ``selection_frequency`` is less than 1.
         """
+        logger.info("Selecting molecules for final dataset")
+
         if dataset_type not in self.SUPPORTED_DATASET_TYPES:
             raise RuntimeError(f"`{dataset_type}` is not a supported dataset type")
         if selection_frequency < 1:
             raise RuntimeError(f"selection_frequency({selection_frequency}) must be an integer greater >= 1")
 
+        logger.info("Sorting molecules by fingerprint")
         self.sorted_by_fingerprint_oeb = pathlib.Path(sorted_oeb)
-        self._sort_molecules_by_fingerprint(self.fingerprint_output_oeb, self.sorted_by_fingerprint_oeb,
-                                            in_memory_sorting_threshold)
+        self._sort_molecules_by_fingerprint(
+            self.fingerprint_output_oeb,
+            self.sorted_by_fingerprint_oeb,
+            pathlib.Path(tmpdir),
+            in_memory_sorting_threshold,
+        )
         sorted_molstream = oechem.oemolistream(str(self.sorted_by_fingerprint_oeb))
 
         # Open any necessary files for outputting the dataset. This will vary by
@@ -297,6 +331,7 @@ class DancePipeline:
             dataset_stream.SetFormat(oechem.OEFormat_SMI)
 
         # Perform the selection.
+        logger.info("Selecting molecules from sorted file")
         for idx, mol in enumerate(sorted_molstream.GetOEMols()):
             if idx % selection_frequency == 0:
                 if dataset_type == "SMILES":
@@ -308,10 +343,11 @@ class DancePipeline:
 
         sorted_molstream.close()
 
+        logger.info("Dataset selection completed")
+
     @staticmethod
-    def _sort_molecules_by_fingerprint(input_oeb: pathlib.Path,
-                                       output_oeb: pathlib.Path,
-                                       in_memory_sorting_threshold: int = 10000):
+    def _sort_molecules_by_fingerprint(input_oeb: pathlib.Path, output_oeb: pathlib.Path, tmpdir: pathlib.Path,
+                                       in_memory_sorting_threshold: int):
         """Sorts the molecules in ``input_oeb`` and writes them to ``output_oeb``.
 
         This method implements an external mergesort on the molecules (see
@@ -327,9 +363,11 @@ class DancePipeline:
             The output molecules.
         in_memory_sorting_threshold : int
             The number of molecules that can be sorted in memory.
+        tmpdir: pathlib.Path
+            Directory in which to create any temporary files.
         """
         # Create a temporary directory for storing sorted chunks of molecules.
-        tmpdir = pathlib.Path(tempfile.mkdtemp())
+        chunk_dir = pathlib.Path(tempfile.mkdtemp(dir=tmpdir))
 
         # Break the original input file into chunks. Sort each chunk and store
         # it in a temporary file.
@@ -339,7 +377,7 @@ class DancePipeline:
 
         def sort_and_save_molecules_in_chunk(chunk_idx):
             # Save the molecules in the current chunk to a temporary file.
-            chunk_file = tmpdir / f"chunk_{chunk_idx}.oeb"
+            chunk_file = chunk_dir / f"chunk_{chunk_idx}.oeb"
             chunk_stream = oechem.oemolostream(str(chunk_file))
             molecules_in_chunk.sort()
             for _, mol in molecules_in_chunk:
@@ -372,7 +410,7 @@ class DancePipeline:
 
         # Build the priority queue.
         for chunk_idx in range(num_chunks):
-            chunk_file = tmpdir / f"chunk_{chunk_idx}.oeb"
+            chunk_file = chunk_dir / f"chunk_{chunk_idx}.oeb"
             chunk_stream = oechem.oemolistream(str(chunk_file))
             mol = oechem.OEMol()
             oechem.OEReadMolecule(chunk_stream, mol)
@@ -397,4 +435,4 @@ class DancePipeline:
         output_stream.close()
 
         # Clean up the temporary directory.
-        shutil.rmtree(str(tmpdir))
+        shutil.rmtree(str(chunk_dir))

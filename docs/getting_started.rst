@@ -99,6 +99,9 @@ takes in a single configuration dict with the fields defined in
 Example
 ```````
 
+(For the fully completed version of this script, see
+`here <https://github.com/btjanaka/dance/tree/master/examples/getting_started_example.py>`_)
+
 Say we would like to create a diverse dataset of molecules that have an oxygen
 in them. For the purposes of this example, we define "diverse" as meaning that
 the molecules have different numbers of atoms.  Meanwhile, our database is the
@@ -218,3 +221,18 @@ Thus, our final code looks like this:
   run_dance(config)
 
 For more information on DANCE, view the API Documentation.
+
+Logging
+```````
+
+DANCE uses Python's ``logging`` module to provide information about the state
+of the pipeline. Most messages are of type ``INFO`` or ``DEBUG``, and as such
+will not be displayed on the console. To show this information on the console,
+change the logging level by adding this line before running DANCE:
+
+::
+
+  logging.getLogger("dance").setLevel(logging.DEBUG)
+
+``logging.INFO`` may also be passed in if you do not wish to see the
+``DEBUG`` messages.
