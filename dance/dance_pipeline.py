@@ -84,7 +84,7 @@ class DancePipeline:
     FINGERPRINT_VALUE_NAME = "dance_fingerprint_value"
 
     #: Set of types which the pipeline supports for the final dataset.
-    SUPPORTED_DATASET_TYPES = frozenset(["SMILES"])
+    SUPPORTED_DATASET_TYPES = frozenset(["SMILES", "OEB"])
 
     def __init__(self, database_type: str, database_info):
         logger.info("Initializing pipeline")
@@ -324,21 +324,24 @@ class DancePipeline:
         )
         sorted_molstream = oechem.oemolistream(str(self.sorted_by_fingerprint_oeb))
 
-        # Open any necessary files for outputting the dataset. This will vary by
+        # Open any necessary files for outputting the dataset. This may vary by
         # dataset_type.
-        if dataset_type == "SMILES":
+        if dataset_type in ["SMILES", "OEB"]:
             dataset_stream = oechem.oemolostream(str(dataset_info))
-            dataset_stream.SetFormat(oechem.OEFormat_SMI)
+            dataset_stream.SetFormat({
+                "SMILES": oechem.OEFormat_SMI,
+                "OEB": oechem.OEFormat_OEB,
+            }[dataset_type])
 
         # Perform the selection.
         logger.info("Selecting molecules from sorted file")
         for idx, mol in enumerate(sorted_molstream.GetOEMols()):
             if idx % selection_frequency == 0:
-                if dataset_type == "SMILES":
+                if dataset_type in ["SMILES", "OEB"]:
                     oechem.OEWriteMolecule(dataset_stream, mol)
 
         # Clean up.
-        if dataset_type == "SMILES":
+        if dataset_type in ["SMILES", "OEB"]:
             dataset_stream.close()
 
         sorted_molstream.close()
