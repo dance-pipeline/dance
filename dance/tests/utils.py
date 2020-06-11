@@ -1,5 +1,6 @@
 """General testing utilities."""
 import pathlib
+from collections import Counter
 from typing import List
 
 from openeye import oechem
@@ -32,9 +33,9 @@ def get_list_of_canonical_isomeric_smiles(smiles_list: List[str]) -> List[str]:
 def assert_smiles_in_file_are_equal(smiles_file: pathlib.Path, smiles: List[str]):
     """Checks that the SMILES in the given file are equivalent to those in the list (unordered)."""
     smiles_stream = oechem.oemolistream(str(smiles_file))
-    outputted_smiles = set(oechem.OEMolToSmiles(mol) \
+    outputted_smiles = Counter(oechem.OEMolToSmiles(mol) \
                             for mol in smiles_stream.GetOEMols())
-    assert set(smiles) == outputted_smiles
+    assert Counter(smiles) == outputted_smiles
 
 
 def assert_ordered_smiles_in_file_are_equal(smiles_file: pathlib.Path, smiles: List[str]):
@@ -54,14 +55,15 @@ def get_mols_from_oeb(oeb: pathlib.Path) -> List[oechem.OEMol]:
 
 
 def assert_smiles_in_oeb_are_equal(oeb: pathlib.Path, smiles: List[str]):
-    """Checks that the molecules in the oeb have the same SMILES as those in the list."""
-    outputted_smiles = set(oechem.OEMolToSmiles(mol) \
+    """Checks that the molecules in the OEB have the same SMILES as those
+    in the list."""
+    outputted_smiles = Counter(oechem.OEMolToSmiles(mol) \
                             for mol in get_mols_from_oeb(oeb))
-    assert set(smiles) == outputted_smiles
+    assert Counter(smiles) == outputted_smiles
 
 
 def assert_ordered_smiles_in_oeb_are_equal(oeb: pathlib.Path, smiles: List[str]):
-    """Checks that the molecules in the oeb have the same SMILES as those in the
+    """Checks that the molecules in the OEB have the same SMILES as those in the
     list, and in the correct order."""
     outputted_smiles = [oechem.OEMolToSmiles(mol) for mol in get_mols_from_oeb(oeb)]
     assert smiles == outputted_smiles

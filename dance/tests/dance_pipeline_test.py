@@ -295,6 +295,15 @@ def test_select_sets_sorted_fingerprint_oeb_attribute(_pipeline_executed_until_f
     assert dp.sorted_by_fingerprint_oeb == sorted_by_fingerprint_oeb
 
 
+def test_select_outputs_to_oeb(_pipeline_executed_until_fingerprint, tmp_path):
+    (dp, *unused, smiles_dataset_file, sorted_by_fingerprint_oeb) = _pipeline_executed_until_fingerprint
+    oeb_dataset = tmp_path / "dataset.oeb"
+
+    dp.select(1, "OEB", oeb_dataset, sorted_by_fingerprint_oeb)
+
+    utils.assert_smiles_in_oeb_are_equal(oeb_dataset, TEST_CANONICAL_ISOMERIC_SMILES)
+
+
 def test_select_can_choose_every_molecule(_pipeline_executed_until_fingerprint):
     (dp, *unused, smiles_dataset_file, sorted_by_fingerprint_oeb) = _pipeline_executed_until_fingerprint
     dp.select(1, "SMILES", smiles_dataset_file, sorted_by_fingerprint_oeb)

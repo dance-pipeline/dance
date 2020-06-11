@@ -1,0 +1,6 @@
+results/
+
+# Molecule files
+*.smi
+*.oeb
+*.sdf

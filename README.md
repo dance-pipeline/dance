@@ -16,6 +16,7 @@ information on DANCE.
 
 * [Overview](#overview)
 * [Documentation](#documentation)
+* [Installation](#installation)
 * [Manifest](#manifest)
 * [Contributing](#contributing)
 * [Contributors](#contributors)
@@ -40,6 +41,25 @@ select a diverse dataset from among those molecules.
 The complete documentation for DANCE is available at
 https://dance.readthedocs.io/. To build your own version of the documentation,
 see [docs/README.md](docs/README.md).
+
+## Installation
+
+DANCE relies on the
+[OpenEye Toolkit](https://docs.eyesopen.com/toolkits/python/index.html). The
+OpenEye Toolkit is proprietary software, and you will need an OpenEye license to
+use DANCE.
+
+Clone the DANCE repository with:
+
+```
+git clone https://github.com/btjanaka/dance
+```
+
+Then run:
+
+```
+pip install --extra-index-url https://pypi.anaconda.org/openeye/simple -e .
+```
 
 ## Manifest
 
