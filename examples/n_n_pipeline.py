@@ -1,10 +1,10 @@
-'''
+"""
 Script for filtering a dataset for molecules with single 
 nitrogen-nitrogen bonds
 
 Usage:
     python n_n_pipeline.py --smiles-database database.smi
-'''
+"""
 
 import argparse
 from openeye import oechem
@@ -45,4 +45,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
+#no newline at end of file
