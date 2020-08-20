@@ -10,9 +10,10 @@ import argparse
 from openeye import oechem
 from dance.run import run_dance
 
+
 def main():
     """Builds and runs a pipeline."""
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--smiles-database",
                         type=str,
@@ -21,14 +22,14 @@ def main():
                               "to process in the pipeline."))
     args = parser.parse_args()
 
+    SUBS = oechem.OESubSearch("[#7:1]-[#7:2]")
+
     def relevant_if_has_single_bonded_nitrogen(mol):
-        subs = oechem.OESubSearch("[#7:1]-[#7:2]")
-        return subs.SingleMatch(mol)
-    
+        return SUBS.SingleMatch(mol)
 
     def size_fingerprint(mol):
         return (mol.NumAtoms(), )
-    
+
     config = {
         "database_type": "SMILES",
         "database_info": args.smiles_database,
@@ -39,10 +40,9 @@ def main():
         "dataset_info": "dataset.smi",
         "in_memory_sorting_threshold": 25000,
     }
-    
+
     run_dance(config)
-    
+
 
 if __name__ == "__main__":
     main()
-#no newline at end of file
