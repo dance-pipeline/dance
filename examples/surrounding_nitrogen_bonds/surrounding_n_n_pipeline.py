@@ -37,11 +37,15 @@ def main():
         "database_type": "SMILES",
         "database_info": args.smiles_database,
         "relevance_function": relevant_if_has_single_bonded_nitrogen,
+        "filter_output_oeb": "results/filter_output.oeb",
         "fingerprint_function": neighbors_and_wbo_fingerprint,
+        "fingerprint_output_oeb": "results/fingerprint_output.oeb",
         "selection_frequency": 3,
         "dataset_type": "SMILES",
-        "dataset_info": "dataset.smi",
+        "dataset_info": "results/dataset.smi",
+        "sorted_by_fingerprint_oeb": "results/sorted_by_fingerprint.oeb",
         "in_memory_sorting_threshold": 25000,
+        "tmpdir": "results/",
     }
 
     run_dance(config)

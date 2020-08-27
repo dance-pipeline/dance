@@ -10,12 +10,13 @@ AM1_CALCULATOR = oequacpac.OEAM1()
 
 def find_neighboring_atoms(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
     """
-    Finds and returns the neighbor atoms of a nitrogen-nitrogen bond as a list
-    given a match. Number of neighboring atoms in the returned list can differ
-    depending on how many neighbors the bond actually has and how bonds are
-    found to be matching the SMIRKS pattern.
+    Finds and returns the atomic numbers of neighboring atoms to the 
+    nitrogen-nitrogen bonds of a molecule as a list. Number of potential
+    neighboring atomic numbers for all nitrogen-nitrogen bonds of a
+    molecule is set to a max of 10 
     """
-    neighbors = []
+    neighbors = [0 for _ in range(10)]
+    idx = 0
 
     for trgtBond in match.Target().GetTargetBonds():
         trgtIdxs = (trgtBond.GetIdx() - 1, trgtBond.GetIdx())
@@ -24,18 +25,21 @@ def find_neighboring_atoms(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
                 for bond in atom.GetBonds():
                     nbor = bond.GetNbr(atom)
                     if nbor.GetIdx() not in trgtIdxs:
-                        neighbors.append(nbor.GetAtomicNum())
+                        neighbors[idx] = nbor.GetAtomicNum()
+                        idx += 1
+                        if idx == 10: 
+                            return neighbors
     return neighbors
 
 
 def wiberg_bond_order(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
     """
-    Finds and returns a list of Wiberg bond orders of nitrogen-nitrogen bonds
-    given a match. Number of Wiberg bond order values in the returned list can 
-    differ depending on how many bonds are found to be matching the SMIRKS
-    pattern.
+    Finds and returns the Wiberg bond orders of the  nitrogen-nitrogen bonds 
+    of a molecule as a list. Number of potential Wiberg bond orders for all 
+    nitrogen-nitrogen bonds of a molecule is set to a max of 5
     """
-    wbo = []
+    wbo = [0 for _ in range(5)]
+    idx = 0
     results = oequacpac.OEAM1Results()
 
     #Generates molecule conformer
@@ -53,6 +57,7 @@ def wiberg_bond_order(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
     for trgtBond in match.Target().GetTargetBonds():
         trgtIdxs = (trgtBond.GetIdx() - 1, trgtBond.GetIdx())
         AM1_CALCULATOR.CalcAM1(results, mol)
-        wbo.append(results.GetBondOrder(trgtIdxs[0], trgtIdxs[1]))
-
+        wbo[idx] = results.GetBondOrder(trgtIdxs[0], trgtIdxs[1])
+        if idx == 5:
+            return wbo
     return wbo
