@@ -58,6 +58,7 @@ def wiberg_bond_order(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
         trgtIdxs = (trgtBond.GetIdx() - 1, trgtBond.GetIdx())
         AM1_CALCULATOR.CalcAM1(results, mol)
         wbo[idx] = results.GetBondOrder(trgtIdxs[0], trgtIdxs[1])
+        idx += 1
         if idx == 5:
             return wbo
     return wbo
