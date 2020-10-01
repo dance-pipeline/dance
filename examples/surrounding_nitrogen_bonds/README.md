@@ -70,4 +70,31 @@ files in a .txt format, run the following command:
 
 ```bash
  python oeb_results_to_txt.py results/
- ```
+```
+
+#### Results 
+
+This pipeline begins with 1000 emolecules. The selection frequency of 3 
+in the configuration for the pipeline allows for 334 potenital molecules to be
+recorded in the results. However, after filtering through the first 1000
+emolecules, the pipeline results in only26 molecules that were identified to 
+have at least 1 single nitrogen-nitrogen bond. 
+
+These 26 molecules are fingerprinted with by a list of 15 values. The first 
+10 values in the list are reserved for atomic numbers of neighboring atoms to
+the nitrogen-nitrogen bond(s) found in the given molecule. The remaining 5 
+values in the list are reserved for Wiberg bond order values of the 
+nitrogen-nitrogen bond(s) in the molecule. 
+
+It is very likely a molecule's fingerprint data will not have a value for 
+every index in the list. This is due to the possibility that molecules may not
+have multiple nitrogen-nitrogen bonds. The unused values in a molecule's 
+fingerprint are set to 0. 
+
+In the instance a molecule is unable to be configured in order to calculate 
+its Wiberg bond order, an error message will be printed including the smiles 
+string for the molecule. The 5 values of the list set aside for Wiberg bond
+order values will then be replaced with a -1. Currently, some molecules will
+display a warning that they failed due to unspecified stereochemistry. This
+message can be ignored and a molecule will be known to fail if the message,
+"Failed to generate conformer for <molecule>" is displayed.

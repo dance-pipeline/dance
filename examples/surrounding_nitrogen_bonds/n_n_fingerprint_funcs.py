@@ -3,6 +3,10 @@ Various functions to create fingerprints for single nitrogen-nitrogen bonds
 """
 
 from openeye import oechem, oeomega, oequacpac
+import logging
+
+# Configure logger.
+logger = logging.getLogger(__name__)
 
 # Object for calculating AM1 charges
 AM1_CALCULATOR = oequacpac.OEAM1()
@@ -34,9 +38,10 @@ def find_neighboring_atoms(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
 
 def wiberg_bond_order(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
     """
-    Finds and returns the Wiberg bond orders of the  nitrogen-nitrogen bonds 
+    Finds and returns the Wiberg bond orders of the nitrogen-nitrogen bonds 
     of a molecule as a list. Number of potential Wiberg bond orders for all 
-    nitrogen-nitrogen bonds of a molecule is set to a max of 5
+    nitrogen-nitrogen bonds of a molecule is set to a max of 5. 
+    Returns -1 if the calculation fails.
     """
     wbo = [0 for _ in range(5)]
     idx = 0
@@ -51,7 +56,14 @@ def wiberg_bond_order(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
     omega.SetStrictStereo(True)
     omega.SetStrictAtomTypes(True)
     omega.SetIncludeInput(False)
-    omega(mol)
+    status = omega(mol)
+    
+    if status is False:
+        omega.SetStrictStereo(False)
+        newStatus = omega(mol)
+        if newStatus is False:
+            logger.error("Failed to generate conformer for %s", oechem.OEMolToSmiles(mol))
+            return [-1]
 
     #Calculates bond orders of nitrogen-nitrogen bonds
     for trgtBond in match.Target().GetTargetBonds():
