@@ -25,13 +25,29 @@ def main():
     SUBS = oechem.OESubSearch("[#7:1]-[#7:2]")
 
     def relevant_if_has_single_bonded_nitrogen(mol: oechem.OEMol):
-        return SUBS.SingleMatch(mol)
+        match = SUBS.Match(mol, True)
+        nnCount = 0
+        
+        while match.IsValid():
+            for i in match.Target().GetTargetBonds():
+                nnCount += 1
+            match.Next()
+        
+        if nnCount == 1:
+            return True
+        return False
 
     def neighbors_and_wbo_fingerprint(mol: oechem.OEMol):
+        result = []
         match = SUBS.Match(mol, True)
+        
         neighbors = n_n_fingerprint_funcs.find_neighboring_atoms(mol, match)
+        result += neighbors
+        
         wbo = n_n_fingerprint_funcs.wiberg_bond_order(mol, match)
-        return neighbors + wbo
+        result.append(wbo)
+        
+        return result
 
     config = {
         "database_type": "SMILES",

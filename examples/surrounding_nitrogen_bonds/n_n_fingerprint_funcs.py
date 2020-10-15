@@ -15,36 +15,32 @@ AM1_CALCULATOR = oequacpac.OEAM1()
 def find_neighboring_atoms(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
     """
     Finds and returns the atomic numbers of neighboring atoms to the 
-    nitrogen-nitrogen bonds of a molecule as a list. Number of potential
-    neighboring atomic numbers for all nitrogen-nitrogen bonds of a
-    molecule is set to a max of 10 
+    nitrogen-nitrogen bond of a molecule as a list. The maximum number of 
+    potential neighbors to be used is set to 3.
     """
-    neighbors = [0 for _ in range(10)]
-    idx = 0
+    neighbors = [0 for _ in range(3)]
+    indx = 0
 
-    for trgtBond in match.Target().GetTargetBonds():
-        trgtIdxs = (trgtBond.GetIdx() - 1, trgtBond.GetIdx())
-        for atom in mol.GetAtoms():
-            if atom.GetIdx() in trgtIdxs:
-                for bond in atom.GetBonds():
-                    nbor = bond.GetNbr(atom)
-                    if nbor.GetIdx() not in trgtIdxs:
-                        neighbors[idx] = nbor.GetAtomicNum()
-                        idx += 1
-                        if idx == 10: 
-                            return neighbors
+    trgtBond = match.Target().GetTargetBonds().Target()
+    trgtIdxs = (trgtBond.GetIdx() - 1, trgtBond.GetIdx())
+    for atom in mol.GetAtoms():
+        if atom.GetIdx() in trgtIdxs:
+            for bond in atom.GetBonds():
+                nbor = bond.GetNbr(atom)
+                if nbor.GetIdx() not in trgtIdxs:
+                    neighbors[indx] = nbor.GetAtomicNum()
+                    indx += 1
+                    if indx == 3: 
+                        return neighbors
     return neighbors
 
 
 def wiberg_bond_order(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
     """
-    Finds and returns the Wiberg bond orders of the nitrogen-nitrogen bonds 
-    of a molecule as a list. Number of potential Wiberg bond orders for all 
-    nitrogen-nitrogen bonds of a molecule is set to a max of 5. 
+    Finds and returns the Wiberg bond order of the nitrogen-nitrogen bond 
+    of a molecule.
     Returns -1 if the calculation fails.
     """
-    wbo = [0 for _ in range(5)]
-    idx = 0
     results = oequacpac.OEAM1Results()
 
     #Generates molecule conformer
@@ -66,11 +62,8 @@ def wiberg_bond_order(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
             return [-1]
 
     #Calculates bond orders of nitrogen-nitrogen bonds
-    for trgtBond in match.Target().GetTargetBonds():
-        trgtIdxs = (trgtBond.GetIdx() - 1, trgtBond.GetIdx())
-        AM1_CALCULATOR.CalcAM1(results, mol)
-        wbo[idx] = results.GetBondOrder(trgtIdxs[0], trgtIdxs[1])
-        idx += 1
-        if idx == 5:
-            return wbo
-    return wbo
+    trgtBond = match.Target().GetTargetBonds().Target()
+    trgtIdxs = (trgtBond.GetIdx() - 1, trgtBond.GetIdx())
+    AM1_CALCULATOR.CalcAM1(results, mol)
+    return results.GetBondOrder(trgtIdxs[0], trgtIdxs[1])
+    
