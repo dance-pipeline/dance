@@ -35,10 +35,16 @@ def main():
         
         if nnCount == 1:
             return True
+        
         return False
 
     def neighbors_and_wbo_fingerprint(mol: oechem.OEMol):
         result = []
+        mol, status = n_n_fingerprint_funcs.smiles_to_oemol(oechem.OEMolToSmiles(mol))
+        
+        if (status == False):
+            return [-1,-1,-1,-1,-1]
+        
         match = SUBS.Match(mol, True)
         
         neighbors = n_n_fingerprint_funcs.find_neighboring_atoms(mol, match)
