@@ -13,6 +13,8 @@ from typing import Tuple, Union
 from openeye import oechem
 from sortedcontainers import SortedList
 
+import os, platform
+
 # Configure logger.
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -370,6 +372,12 @@ class DancePipeline:
             Directory in which to create any temporary files.
         """
         # Create a temporary directory for storing sorted chunks of molecules.
+        # NOTE: Windows "equivalent" of Linux's and MacOS's /tmp dir is actually
+        # the C:/Users/*your_username*/AppData/Local/Temp directory
+        # Go to your AppData/Local/ directory and create a Temp directory if you
+        # have one. Also set the TEMP environment variable to the path in line 376
+        if platform.system() == 'Windows':
+            tmpdir = os.getenv('LOCALAPPDATA') + '\\Temp'
         chunk_dir = pathlib.Path(tempfile.mkdtemp(dir=tmpdir))
 
         # Break the original input file into chunks. Sort each chunk and store
