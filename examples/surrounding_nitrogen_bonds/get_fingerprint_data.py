@@ -24,7 +24,7 @@ def read():
                     data.write(f"Mol #{molCount} ")
                     data.write(f"{line}")
                     dataVal = molList[lineNum].GetData()
-                    if molList[lineNum].GetData("dance_fingerprint_value_3") == 0:
+                    if molList[lineNum].GetData("dance_fingerprint_value_4") == -1:
                         failedMols.write(f"{line}")
                     data.write(f"Fingerprint data: {dataVal}\n")
                     data.write("\n")

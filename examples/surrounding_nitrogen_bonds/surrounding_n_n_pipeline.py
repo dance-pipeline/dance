@@ -42,16 +42,16 @@ def main():
         result = []
         mol, status = n_n_fingerprint_funcs.smiles_to_oemol(oechem.OEMolToSmiles(mol))
         
-        if (status == False):
+        if (not status):
             return [-1,-1,-1,-1,-1]
         
         match = SUBS.Match(mol, True)
         
-        neighbors = n_n_fingerprint_funcs.find_neighboring_atoms(mol, match)
-        result += neighbors
-        
         wbo = n_n_fingerprint_funcs.wiberg_bond_order(mol, match)
         result.append(wbo)
+        
+        neighbors = n_n_fingerprint_funcs.find_neighboring_atoms(mol, match)
+        result += neighbors
         
         return result
 
