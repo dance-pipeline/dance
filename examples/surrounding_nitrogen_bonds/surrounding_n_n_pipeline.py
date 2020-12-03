@@ -6,10 +6,9 @@ Usage:
 """
 
 import argparse
-import n_n_fingerprint_funcs
+import nn_fingerprint_funcs
 from openeye import oechem
 from dance.run import run_dance
-
 
 def main():
     """Builds and runs a pipeline."""
@@ -27,31 +26,33 @@ def main():
     def relevant_if_has_single_bonded_nitrogen(mol: oechem.OEMol):
         match = SUBS.Match(mol, True)
         nnCount = 0
-        
+
         while match.IsValid():
             for i in match.Target().GetTargetBonds():
                 nnCount += 1
             match.Next()
-        
+
         if nnCount == 1:
-            return True
+            mol, status = nn_fingerprint_funcs.smiles_to_oemol(oechem.OEMolToSmiles(mol))
+            return status
         
         return False
 
     def neighbors_and_wbo_fingerprint(mol: oechem.OEMol):
         result = []
-        mol, status = n_n_fingerprint_funcs.smiles_to_oemol(oechem.OEMolToSmiles(mol))
+        mol, status = nn_fingerprint_funcs.smiles_to_oemol(oechem.OEMolToSmiles(mol))
         
-        if (not status):
+        if status is False:
             return [-1,-1,-1,-1,-1]
         
         match = SUBS.Match(mol, True)
         
-        wbo = n_n_fingerprint_funcs.wiberg_bond_order(mol, match)
+        wbo = nn_fingerprint_funcs.wiberg_bond_order(mol, match)
         result.append(wbo)
         
-        neighbors = n_n_fingerprint_funcs.find_neighboring_atoms(mol, match)
+        neighbors = nn_fingerprint_funcs.find_neighboring_atoms(mol, match)
         result += neighbors
+        
         
         return result
 

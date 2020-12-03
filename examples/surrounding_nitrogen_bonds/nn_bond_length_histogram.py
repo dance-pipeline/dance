@@ -2,7 +2,7 @@
 Script for generating a histogram based on the bond length of
 single nitrogen-nitrogen bonds
 Usage:
-    python nn_bond_length_histogram.py --smiles_database results/[database.smi]
+    python nn_bond_length_histogram.py --smiles_database [DATABASE] --fingerprinted [T or F]
 """
 
 from openeye import oechem, oeomega, oequacpac, oeff
@@ -22,6 +22,10 @@ def generateHistogram():
                         required=True,
                         help=("Name of a SMILES file containing molecules "
                               "to generate a bond length histogram."))
+    parser.add_argument("--fingerprinted",
+                        type=str,
+                        required=True,
+                        help=("True or False if the database is fingerprinted or not"))
     args = parser.parse_args()
     
     ifs = oechem.oemolistream(args.smiles_database)
@@ -42,9 +46,13 @@ def generateHistogram():
             
             bondLength = getBondLength(n1Coords, n2Coords)
             bondLengths.append(bondLength)
-            print(bondLength)
     
-    plt.hist(bondLengths, density=True, bins=30)  # `density=False` would make counts
+    plt.hist(bondLengths, density=True, bins=30)
+    
+    if (args.fingerprinted.lower() == "t"):
+        plt.title(f"Fingerprinted N-N Molecules ({len(bondLengths)} total mols)")
+    elif (args.fingerprinted.lower() == "f"):
+        plt.title(f"Random N-N Molecules ({len(bondLengths)} total mols)")
     plt.ylabel("Frequency")
     plt.xlabel("Bond Length (angstrom)")
     plt.show(block=True)
