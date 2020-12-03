@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import math
 import argparse
 from collections import defaultdict
-from openeye import oechem
+from openeye import oechem, oeomega
 
 def makeHistogram():
     parser = argparse.ArgumentParser()
@@ -16,16 +16,31 @@ def makeHistogram():
     histogram = []
     
     for molecule in ifs.GetOEMols():
-        smiles_mol = oechem.OEMolToSmiles(molecule)
-        mol = oechem.OEMol()
-        oechem.OESmilesToMol(mol, smiles_mol)
-        length = len([atom for atom in mol.GetAtoms()])
-        histogram.append(length)
+        mol, status = smiles2oemol(oechem.OEMolToSmiles(molecule))
+        if (status):
+            length = len([atom for atom in mol.GetAtoms()])
+            histogram.append(length)
     plt.hist(histogram, color="red", density=True, bins=40)
     plt.ylabel("Frequency")
     plt.xlabel("Atom Count")
     plt.title("Atom Frequency Probability of Randomly Selected Molecules")
     plt.show()
+
+def smiles2oemol(smiles):
+    mol = oechem.OEMol()
+    oechem.OESmilesToMol(mol, smiles)
+
+    omega = oeomega.OEOmega()
+
+    omega.SetMaxConfs(1)
+    omega.SetIncludeInput(True)
+    omega.SetIncludeInput(True)
+    omega.SetSampleHydrogens(True)
+    omega.SetStrictStereo(True)
+    omega.SetStrictAtomTypes(True)
+    omega.SetIncludeInput(False)
+    status = omega(mol)
+    return (mol, status)
 
 if __name__ == "__main__":
     makeHistogram()
