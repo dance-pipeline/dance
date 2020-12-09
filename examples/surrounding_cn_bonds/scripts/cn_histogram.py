@@ -31,20 +31,23 @@ def generateHistogram():
     ifs = oechem.oemolistream(args.smiles_database)
     subs = oechem.OESubSearch("[#6:1]-[#7:2]")
     histogram = []
+    mol_count = 0
     for molecule in ifs.GetOEMols():
         mol, status = smiles2oemol(oechem.OEMolToSmiles(molecule))
         if (status):
             if subs.SingleMatch(mol):
+                mol_count = mol_count + 1
                 length = len([atom for atom in mol.GetAtoms()])
                 histogram.append(length)
     title = ""
     colour = "blue"
     if (args.fingerprinted.lower() == "t"):
-        title = f"Atom Count of Fingerprinted C-N Molecules"
+        title = f"Atom Count of {mol_count} Fingerprinted C-N Molecules"
     elif (args.fingerprinted.lower() == "f"):
-        title = f"Atom Count of Random C-N Molecules"
+        title = f"Atom Count of {mol_count} Random C-N Molecules"
         colour = "red"
-    plt.hist(histogram, color = colour, density=False, bins=30)
+    plt.hist(histogram, range=[0,100],color = colour, density=False, bins=30)
+    plt.ylim(0,100)
     plt.title(title)
     plt.ylabel("Frequency")
     plt.xlabel("Atom Count")
@@ -86,15 +89,7 @@ def optimizeMol(mol):
         conf.SetCoords(vecCoords)
         am1.CalcAM1(results, conf)
 
-    return mol
-
-def getBondLength(n1Coords, n2Coords):
-    """
-    Calculates and returns the bond length between 2 nitrogen atoms
-    """
-    return math.sqrt( (n2Coords[0] - n1Coords[0])**2 + 
-                     (n2Coords[1] - n1Coords[1])**2 + 
-                     (n2Coords[2] - n1Coords[2])**2 )      
+    return mol   
 
 if __name__ == "__main__":
     generateHistogram()
