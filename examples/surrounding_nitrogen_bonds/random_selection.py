@@ -1,4 +1,5 @@
-"""Randomly selects N molecules from an input file.
+"""
+Randomly selects N molecules from an input file.
 Usage:
     python random_selection.py -n [N] --input [FILE] --output [FILE]
 """
@@ -31,7 +32,7 @@ def main():
     parser.add_argument(
         "--seed",
         type=int,
-        default=0,
+        default=None,
         help="Random seed.",
     )
     args = parser.parse_args()
@@ -46,16 +47,11 @@ def main():
         if (subs.SingleMatch(mol)):
             molecules.append(oechem.OEMol(mol))
 
-    #Choose the molecules.
-    #selected_molecules = random.sample(molecules, args.n)
-
-    #Output the molecules.
+    # Output the molecules.
     output_stream = oechem.oemolostream(args.output)
-    for mol in range(args.n):
-        randomNum = random.randint(0, len(molecules)-1)
-        randomMol = molecules[randomNum]
+    molecules = random.shuffle(molecules)
+    for mol in molecules[:args.n]:
         oechem.OEWriteMolecule(output_stream, randomMol)
-
 
 if __name__ == "__main__":
     main()

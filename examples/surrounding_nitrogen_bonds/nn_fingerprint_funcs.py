@@ -11,32 +11,25 @@ logger = logging.getLogger(__name__)
 # Object for calculating AM1 charges
 AM1_CALCULATOR = oequacpac.OEAM1()
 
-def smiles_to_oemol(smiles):
+def smiles2oemol(smiles):
     """
     Conforms molecules from a smiles string to an OEMol with all the traits
     necessary for OpenEye functions to return accurate data
     """
     mol = oechem.OEMol()
     oechem.OESmilesToMol(mol, smiles)
-    
-    # Initialize Omega
+    #initialize omega
     omega = oeomega.OEOmega()
     omega.SetMaxConfs(1)
     omega.SetIncludeInput(True)
     omega.SetCanonOrder(True)
-    omega.SetSampleHydrogens(True)  # Word to the wise: skipping this step can lead to significantly different charges!
-    omega.SetStrictStereo(True)
+    omega.SetSampleHydrogens(True)
+    omega.SetStrictStereo(False)
     omega.SetStrictAtomTypes(True)
-    omega.SetIncludeInput(False) # don't include input
+    omega.SetIncludeInput(False)
     status = omega(mol)
     
-    if status is False:
-        omega.SetStrictStereo(False)
-        newStatus = omega(mol)
-        if newStatus is False:
-            logger.error("Failed to generate conformer for %s", oechem.OEMolToSmiles(mol))
-            
-    return (mol, status) 
+    return (mol, status)
 
 def find_neighboring_atoms(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
     """
@@ -48,15 +41,15 @@ def find_neighboring_atoms(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
     neighbors = [0, 0, 0, 0]
     indx = 0
     
-    targetBond = match.Target().GetTargetBonds().Target()
-    targetAtoms = (targetBond.GetBgn(), targetBond.GetEnd())
+    target_bond = match.Target().GetTargetBonds().Target()
+    target_atoms = (target_bond.GetBgn(), target_bond.GetEnd())
     
     for bond in mol.GetBonds():
-        if(bond.GetBgn() in targetAtoms or bond.GetEnd() in targetAtoms):
-            if bond.GetBgn() not in targetAtoms:
+        if(bond.GetBgn() in target_atoms or bond.GetEnd() in target_atoms):
+            if bond.GetBgn() not in target_atoms:
                 neighbors[indx] = bond.GetBgn().GetAtomicNum()
                 indx += 1
-            elif bond.GetEnd() not in targetAtoms:
+            elif bond.GetEnd() not in target_atoms:
                 neighbors[indx] = bond.GetEnd().GetAtomicNum()
                 indx += 1
             if indx == 4:
@@ -71,10 +64,10 @@ def wiberg_bond_order(mol: oechem.OEMol, match: oechem.OEMatchBaseIter):
     """
     results = oequacpac.OEAM1Results()
 
-    targetBond = match.Target().GetTargetBonds().Target()
-    targetIdxs = (targetBond.GetBgn().GetIdx(), targetBond.GetEnd().GetIdx())
+    target_bond = match.Target().GetTargetBonds().Target()
+    target_idxs = (target_bond.GetBgn().GetIdx(), target_bond.GetEnd().GetIdx())
     
     #Calculates bond orders of nitrogen-nitrogen bonds
     AM1_CALCULATOR.CalcAM1(results, mol)
     
-    return results.GetBondOrder(targetIdxs[0], targetIdxs[1])
+    return results.GetBondOrder(target_idxs[0], target_idxs[1])

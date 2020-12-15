@@ -8,7 +8,7 @@ Usage:
 from openeye import oechem
 
 def read():
-    ifs = oechem.oemolistream("results/fingerprint_output.oeb")
+    ifs = oechem.oemolistream("results/sorted_by_fingerprint.oeb")
     ifs.SetFormat(oechem.OEFormat_OEB)
     
     molList = []
@@ -17,9 +17,9 @@ def read():
     for mol in ifs.GetOEGraphMols():
         molList.append(oechem.OEGraphMol(mol))
         
-    with open("results/fingerprint_data.txt", "w") as data:
+    with open("results/sorted_fingerprint_data.txt", "w") as data:
         with open("results/failed_molecules.txt", "w") as failedMols:
-            with open("results/fingerprint_output.txt") as mols:
+            with open("results/sorted_by_fingerprint.txt") as mols:
                 for lineNum, line in enumerate(mols):
                     data.write(f"Mol #{molCount} ")
                     data.write(f"{line}")

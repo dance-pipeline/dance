@@ -42,7 +42,7 @@ def main():
         result = []
         mol, status = nn_fingerprint_funcs.smiles_to_oemol(oechem.OEMolToSmiles(mol))
         
-        if status is False:
+        if not status:
             return [-1,-1,-1,-1,-1]
         
         match = SUBS.Match(mol, True)

@@ -10,12 +10,7 @@ import argparse
 import matplotlib.pyplot as plt
 import math
 
-def generateHistogram():
-    """
-    Generates a bond length histogram for single nitrogen-nitrogen bonds
-    using a .smi file
-    """
-    
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--smiles_database",
                         type=str,
@@ -28,31 +23,38 @@ def generateHistogram():
                         help=("True or False if the database is fingerprinted or not"))
     args = parser.parse_args()
     
+    generate_histogram(args)
+
+def generate_histogram(args):
+    """
+    Generates a bond length histogram for single nitrogen-nitrogen bonds
+    using a .smi file
+    """
     ifs = oechem.oemolistream(args.smiles_database)
     subs = oechem.OESubSearch("[#7:1]-[#7:2]")
-    bondLengths = []
+    bond_lengths = []
     
     for molecule in ifs.GetOEMols():
         mol, status = smiles2oemol(oechem.OEMolToSmiles(molecule))
-        if (status):
-            optimizeMol(mol)
+        if status:
+            optimize_mol(mol)
             
             match = subs.Match(mol, True)
-            targetBond = match.Target().GetTargetBonds().Target()
-            targetIdxs = (targetBond.GetBgn().GetIdx(), targetBond.GetEnd().GetIdx())
+            target_bond = match.Target().GetTargetBonds().Target()
+            target_idxs = (target_bond.GetBgn().GetIdx(), target_bond.GetEnd().GetIdx())
             
-            n1Coords = mol.GetCoords()[targetIdxs[0]]
-            n2Coords = mol.GetCoords()[targetIdxs[1]]
+            n1_coords = mol.GetCoords()[target_idxs[0]]
+            n2_coords = mol.GetCoords()[target_idxs[1]]
             
-            bondLength = getBondLength(n1Coords, n2Coords)
-            bondLengths.append(bondLength)
+            bond_length = get_bond_length(n1_coords, n2_coords)
+            bond_lengths.append(bond_length)
     
-    plt.hist(bondLengths, density=True, bins=30)
+    plt.hist(bond_lengths, density=True, bins=30)
     
-    if (args.fingerprinted.lower() == "t"):
-        plt.title(f"Fingerprinted N-N Molecules ({len(bondLengths)} total mols)")
-    elif (args.fingerprinted.lower() == "f"):
-        plt.title(f"Random N-N Molecules ({len(bondLengths)} total mols)")
+    if args.fingerprinted.lower() == "t":
+        plt.title(f"Fingerprinted N-N Molecules ({len(bond_lengths)} total mols)")
+    elif args.fingerprinted.lower() == "f":
+        plt.title(f"Random N-N Molecules ({len(bond_lengths)} total mols)")
     plt.ylabel("Frequency")
     plt.xlabel("Bond Length (angstrom)")
     plt.show(block=True)
@@ -76,7 +78,7 @@ def smiles2oemol(smiles):
     status = omega(mol)
     return (mol, status)
     
-def optimizeMol(mol):
+def optimize_mol(mol):
     """
     Optimizes OEMols using an AM1 calculation so that they return the most 
     accurate data possible 
@@ -95,14 +97,14 @@ def optimizeMol(mol):
 
     return mol
 
-def getBondLength(n1Coords, n2Coords):
+def get_bond_length(n1_coords, n2_coords):
     """
     Calculates and returns the bond length between 2 nitrogen atoms
     """
-    return math.sqrt( (n2Coords[0] - n1Coords[0])**2 + 
-                     (n2Coords[1] - n1Coords[1])**2 + 
-                     (n2Coords[2] - n1Coords[2])**2 )      
+    return math.sqrt( (n2_coords[0] - n1_coords[0])**2 +
+                     (n2_coords[1] - n1_coords[1])**2 +
+                     (n2_coords[2] - n1_coords[2])**2 )
 
 if __name__ == "__main__":
-    generateHistogram()
+    main()
     
