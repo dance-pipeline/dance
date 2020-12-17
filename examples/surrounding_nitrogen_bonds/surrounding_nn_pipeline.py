@@ -2,7 +2,7 @@
 Script for filtering a dataset for molecules with single 
 nitrogen-nitrogen bonds
 Usage:
-    python surrounding_n_n_pipeline.py --smiles-database database.smi
+    python surrounding_nn_pipeline.py --smiles-database database.smi
 """
 
 import argparse
@@ -33,14 +33,14 @@ def main():
             match.Next()
 
         if nnCount == 1:
-            mol, status = nn_fingerprint_funcs.smiles_to_oemol(oechem.OEMolToSmiles(mol))
+            mol, status = nn_fingerprint_funcs.smiles2oemol(oechem.OEMolToSmiles(mol))
             return status
         
         return False
 
     def neighbors_and_wbo_fingerprint(mol: oechem.OEMol):
         result = []
-        mol, status = nn_fingerprint_funcs.smiles_to_oemol(oechem.OEMolToSmiles(mol))
+        mol, status = nn_fingerprint_funcs.smiles2oemol(oechem.OEMolToSmiles(mol))
         
         if not status:
             return [-1,-1,-1,-1,-1]
