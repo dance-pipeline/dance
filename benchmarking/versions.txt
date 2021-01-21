@@ -1,0 +1,4 @@
+qcengine	0.17
+qcelemental	0.17
+openeye		2020.2.0
+openforcefield	0.8.3
