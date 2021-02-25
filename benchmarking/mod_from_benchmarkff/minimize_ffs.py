@@ -31,8 +31,10 @@ from openforcefield.topology import Molecule, Topology
 # eric zhang feb12 2021
 import qcengine
 import qcelemental as qcel
-from qcelemental.models import AtomicInput
+from qcelemental.models import AtomicInput, OptimizationInput
 from qcelemental.models.common_models import Model
+from qcelemental.models.procedures import QCInputSpecification
+from numpy import ravel as flatten
 
 def run_openmm(topology, system, positions):
     """
@@ -249,8 +251,13 @@ def min_gaffx(mol, ofs, gaff2=False):
     # minimize structure
     newpos, energy = run_openmm(topology, system, positions)
 
+    print("newpos\n",newpos)
+    print("len newpos\n",len(newpos))
+    print("energy\n",energy)
     # save geometry, save energy as tag, write mol to file
     oe_mol.SetCoords(oechem.OEFloatArray(newpos))
+    print(oe_mol)
+
     oechem.OESetSDData(oe_mol, f"Energy {sdlabel}", str(energy))
     oechem.OEWriteConstMolecule(ofs, oe_mol)
 
@@ -400,6 +407,135 @@ def get_am1(mol, ofs):
 
     return
 
+# set up qcengine
+xtb_model = Model(method="gfn2-xtb", basis=None)
+# eric zhang feb22 2021
+def min_xtb(mol, ofs):
+    """
+    calculate xtb energy of a single-conformer molecule.
+
+    Parameters
+    ----------
+    mol : OpenEye single-conformer molecule
+    ofs : OpenEye output filestream
+
+    """
+
+    # make copy of the input mol
+    # for some reason this has to be oemol instead of oegraphmol
+    oe_mol = oechem.OEMol(mol)
+
+    energy = None
+    fcoords = None
+
+    try:
+        # create openforcefield molecule ==> prone to triggering Exception
+        off_mol = Molecule.from_openeye(oe_mol, allow_undefined_stereo=True)
+
+        # create molecule for use in qcengine
+        qc_mol = off_mol.to_qcschema()
+
+
+        geometric_input = OptimizationInput(
+                            initial_molecule=qc_mol,
+                            input_specification=QCInputSpecification(model=xtb_model),
+                            keywords={"coordsys": "tric", "maxiter": 300, "program": "xtb"}
+                        )
+
+        opt_result = qcengine.compute_procedure(input_data=geometric_input, procedure="geometric")
+        opt_energy = opt_result.trajectory[-1].properties.return_energy
+
+        # xtb returns energy in hartree
+        hartree_to_kcalpmol = qcel.constants.conversion_factor("hartree", "kcal/mol")
+
+        energy = opt_energy * hartree_to_kcalpmol
+        fcoords = flatten(opt_result.final_molecule.geometry)
+
+    except Exception as e:
+        smilabel = oechem.OEGetSDData(oe_mol, "SMILES QCArchive")
+        print( ' >>> xtb calculation: something went wrong: '
+               f'{oe_mol.GetTitle()} {smilabel}: {e}')
+        return
+
+    # save geometry, save energy as tag, write mol to file
+    oe_mol.SetCoords(fcoords)
+    oechem.OESetSDData(oe_mol, "Energy xtb", str(energy))
+    oechem.OEWriteConstMolecule(ofs, oe_mol)
+
+    return
+
+# eric zhang feb24 2021
+def min_am1(mol, ofs):
+    """
+    calculate am1 energy of a single-conformer molecule.
+
+    Parameters
+    ----------
+    mol : OpenEye single-conformer molecule
+    ofs : OpenEye output filestream
+
+    """
+
+    # make copy of the input mol
+    oe_mol = oechem.OEGraphMol(mol)
+
+    energy = None
+
+    try:
+        opts = oequacpac.OEELFOptions()
+
+        cmol = oechem.OEMol(oe_mol)
+        elf = oequacpac.OEELF(opts)
+        elf.Select(cmol)
+
+        oechem.OEAddExplicitHydrogens(cmol)
+        cmol.Sweep()
+
+        BCCModel = oequacpac.OEBCCType_AM1
+        oequacpac.OEBCCPartialCharges(cmol, BCCModel)
+
+        bccCharges = oechem.OEDoubleArray(cmol.GetMaxAtomIdx())
+
+        for atom in cmol.GetAtoms():
+            bccCharges[atom.GetIdx()] = atom.GetPartialCharge()
+
+        results = oequacpac.OEAM1Results()
+        am1 = oequacpac.OEOptimizedAM1()
+
+        success = am1.CalcAM1(results, cmol)
+        if success == False:
+            print("calcAM1 failed to return a result")
+            raise Exception
+
+        # am1 returns energy in kcal/mol
+        energy = results.GetEnergy()
+        
+        am1Charges = results.GetCharges()
+
+        for atom in oe_mol.GetAtoms():
+            # atom.SetData('AM1 Charge', am1Charges[atom.GetIdx()])
+            # atom.SetData('BCC Charge', bccCharges[atom.GetIdx()])
+            atom.SetData('AM1BCC Charge', am1Charges[atom.GetIdx()] + bccCharges[atom.GetIdx()])
+            atom.SetPartialCharge(am1Charges[atom.GetIdx()] + bccCharges[atom.GetIdx()])
+
+        for bond in oe_mol.GetBonds():
+            bond.SetData('BondOrder', results.GetBondOrder(bond.GetBgnIdx(), bond.GetEndIdx()))
+
+        oequacpac.OESymmetrizePartialCharges(oe_mol)
+        
+    except Exception as e:
+        smilabel = oechem.OEGetSDData(oe_mol, "SMILES QCArchive")
+        print( ' >>> am1 calculation: something went wrong: '
+               f'{oe_mol.GetTitle()} {smilabel}: {e}')
+        return
+
+    # save energy as tag, write mol to file
+    oechem.OESetSDData(oe_mol, "Energy am1", str(energy))
+    oechem.OEWriteConstMolecule(ofs, oe_mol)
+
+    return
+
+
 
 
 
@@ -527,11 +663,11 @@ def main(infile, outfile, ffxml, minimizer):
 
             elif minimizer == 'xtb':
                 # calculate xtb
-                get_xtb(chg_conf, ofs)
+                min_xtb(chg_conf, ofs)
 
             elif minimizer == 'am1':
                 # calculate am1
-                get_am1(chg_conf, ofs)
+                min_am1(chg_conf, ofs)
 
     ifs.close()
     ofs.close()
