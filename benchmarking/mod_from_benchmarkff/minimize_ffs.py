@@ -31,10 +31,11 @@ from openforcefield.topology import Molecule, Topology
 # eric zhang feb12 2021
 import qcengine
 import qcelemental as qcel
-from qcelemental.models import AtomicInput, OptimizationInput
+from qcelemental.models import AtomicInput
 from qcelemental.models.common_models import Model
-from qcelemental.models.procedures import QCInputSpecification
-from numpy import ravel as flatten
+
+# ez mar4 2021
+from openeye import oeff
 
 def run_openmm(topology, system, positions):
     """
@@ -407,8 +408,6 @@ def get_am1(mol, ofs):
 
     return
 
-# set up qcengine
-xtb_model = Model(method="gfn2-xtb", basis=None)
 # eric zhang feb22 2021
 def min_xtb(mol, ofs):
     """
@@ -426,7 +425,7 @@ def min_xtb(mol, ofs):
     oe_mol = oechem.OEMol(mol)
 
     energy = None
-    fcoords = None
+    geom = None
 
     try:
         # create openforcefield molecule ==> prone to triggering Exception
@@ -435,6 +434,8 @@ def min_xtb(mol, ofs):
         # create molecule for use in qcengine
         qc_mol = off_mol.to_qcschema()
 
+        # set up qcengine
+        xtb_model = Model(method="gfn2-xtb", basis=None)
 
         geometric_input = OptimizationInput(
                             initial_molecule=qc_mol,
@@ -449,7 +450,7 @@ def min_xtb(mol, ofs):
         hartree_to_kcalpmol = qcel.constants.conversion_factor("hartree", "kcal/mol")
 
         energy = opt_energy * hartree_to_kcalpmol
-        fcoords = flatten(opt_result.final_molecule.geometry)
+        geom = opt_result.final_molecule.geometry
 
     except Exception as e:
         smilabel = oechem.OEGetSDData(oe_mol, "SMILES QCArchive")
@@ -458,13 +459,13 @@ def min_xtb(mol, ofs):
         return
 
     # save geometry, save energy as tag, write mol to file
-    oe_mol.SetCoords(fcoords)
+    oe_mol.SetCoords(oechem.OEFloatArray(geom))
     oechem.OESetSDData(oe_mol, "Energy xtb", str(energy))
     oechem.OEWriteConstMolecule(ofs, oe_mol)
 
     return
 
-# eric zhang feb24 2021
+# eric zhang mar2 2021
 def min_am1(mol, ofs):
     """
     calculate am1 energy of a single-conformer molecule.
@@ -477,52 +478,35 @@ def min_am1(mol, ofs):
     """
 
     # make copy of the input mol
-    oe_mol = oechem.OEGraphMol(mol)
+    oe_mol = oechem.OEMol(mol)
 
     energy = None
 
     try:
-        opts = oequacpac.OEELFOptions()
+        am1 = oequacpac.OEAM1()  # this is a low-level api class that will not perform any optimization on its own
+        results = oequacpac.OEAM1Results()  # this is where you can access the energy as well as the bond orders
 
-        cmol = oechem.OEMol(oe_mol)
-        elf = oequacpac.OEELF(opts)
-        elf.Select(cmol)
+        # get vector coords
+        vecCoords = oechem.OEDoubleArray(3 * oe_mol.NumAtoms())
+        fcoords = oechem.OEDoubleArray(3 * oe_mol.NumAtoms())
+        cdict = oe_mol.GetCoords(vecCoords)
 
-        oechem.OEAddExplicitHydrogens(cmol)
-        cmol.Sweep()
+        # somehow this is needed to prevent segfault on optimizer( ... )
+        am1.CalcAM1(results, oe_mol)
 
-        BCCModel = oequacpac.OEBCCType_AM1
-        oequacpac.OEBCCPartialCharges(cmol, BCCModel)
+        # Optimize the geometry using AM1
+        optimizer = oeff.OEBFGSOpt()
+        
+        optimizer(am1, vecCoords, fcoords)  # (MolFunc1, Input Coords, Output Coords)
 
-        bccCharges = oechem.OEDoubleArray(cmol.GetMaxAtomIdx())
+        # Set the optimized coords on the conf
+        oe_mol.SetCoords(fcoords)
 
-        for atom in cmol.GetAtoms():
-            bccCharges[atom.GetIdx()] = atom.GetPartialCharge()
-
-        results = oequacpac.OEAM1Results()
-        am1 = oequacpac.OEOptimizedAM1()
-
-        success = am1.CalcAM1(results, cmol)
-        if success == False:
-            print("calcAM1 failed to return a result")
-            raise Exception
-
-        # am1 returns energy in kcal/mol
+        # Perform the AM1 calculation again on the optimized conf
+        am1.CalcAM1(results, oe_mol)
+        
         energy = results.GetEnergy()
-        
-        am1Charges = results.GetCharges()
-
-        for atom in oe_mol.GetAtoms():
-            # atom.SetData('AM1 Charge', am1Charges[atom.GetIdx()])
-            # atom.SetData('BCC Charge', bccCharges[atom.GetIdx()])
-            atom.SetData('AM1BCC Charge', am1Charges[atom.GetIdx()] + bccCharges[atom.GetIdx()])
-            atom.SetPartialCharge(am1Charges[atom.GetIdx()] + bccCharges[atom.GetIdx()])
-
-        for bond in oe_mol.GetBonds():
-            bond.SetData('BondOrder', results.GetBondOrder(bond.GetBgnIdx(), bond.GetEndIdx()))
-
-        oequacpac.OESymmetrizePartialCharges(oe_mol)
-        
+       
     except Exception as e:
         smilabel = oechem.OEGetSDData(oe_mol, "SMILES QCArchive")
         print( ' >>> am1 calculation: something went wrong: '
