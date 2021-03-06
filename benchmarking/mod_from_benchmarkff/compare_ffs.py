@@ -34,14 +34,6 @@ from collections import defaultdict
 
 ### ------------------- Functions -------------------
 
-# ez
-PLOTSHOW = False
-
-# ez
-def calc_rmsd(arr1, arr2):
-    arr1 = np.atleast_2d(arr1)
-    arr2 = np.atleast_2d(arr2)
-    return np.sqrt(np.nanmean((arr1-arr2)**2,axis=0))
 
 def calc_tfd(ref_mol, query_mol, conf_id_tag):
     """
@@ -107,6 +99,7 @@ def calc_tfd(ref_mol, query_mol, conf_id_tag):
             tfd = np.nan
 
     return tfd
+
 
 
 def compare_ffs(in_dict, conf_id_tag, out_prefix, keep_ref_conf=False, mol_slice=None):
@@ -213,18 +206,29 @@ def compare_ffs(in_dict, conf_id_tag, out_prefix, keep_ref_conf=False, mol_slice
         # { moltitle : [conformer energy] }
 
         # loop over each molecule in reference and query files
-        for rmol, qmol in zip(mols_ref, mols_que):
+        #for rmol, qmol in zip(mols_ref, mols_que):
+        print(f"{sdf_que} loop begin")
+        for qmol in mols_que:
 
             # initial check that they have same title and number of confs
+            rmol = next(mols_ref)
             rmol_name = rmol.GetTitle()
             rmol_nconfs = rmol.NumConfs()
-            if (rmol_name != qmol.GetTitle()) or (rmol_nconfs != qmol.NumConfs()):
-                raise ValueError(
+
+            #ez I had some specific molecules that were skipped due toerror in 02
+            # or something. Modifying if ... raise to skip reference molecules until a
+            # matching query molecule is found
+            while  (rmol_name != qmol.GetTitle()) or (rmol_nconfs != qmol.NumConfs()):
+                '''raise ValueError(
                     "ERROR: Molecules not aligned in iteration. "
                     "Offending molecules and number of conformers:\n"
                     f"'{rmol_name}': {rmol_nconfs} nconfs\n"
                     f"'{qmol.GetTitle()}': {qmol.NumConfs()} nconfs"
-                )
+                )'''
+                print(f"{rmol_name} not in {sdf_que}, skipped")
+                rmol = next(mols_ref)
+                rmol_name = rmol.GetTitle()
+                rmol_nconfs = rmol.NumConfs()
 
             # initialize lists to store conformer energies
             enes_ref = []
@@ -233,25 +237,38 @@ def compare_ffs(in_dict, conf_id_tag, out_prefix, keep_ref_conf=False, mol_slice
             tfds_mol = []
             smiles_mol = []
 
+            rciter = iter(rmol.GetConfs())
             # loop over each conformer of this mol
-            for ref_conf, que_conf in zip(rmol.GetConfs(), qmol.GetConfs()):
+            # qmol confs are going to be a subset of rmol confs
+            # because calculations may fail but will never create a new conf
+            for que_conf in qmol.GetConfs():
 
                 # check confomer match from the specified tag
+                ref_conf = next(rciter)
                 ref_id = oechem.OEGetSDData(ref_conf, conf_id_tag)
                 que_id = oechem.OEGetSDData(que_conf, conf_id_tag)
-                if ref_id != que_id:
-                    raise ValueError(
-                        "ERROR: Conformers not aligned in iteration"
-                        f" for mol: '{rmol_name}'. The conformer "
-                        f"IDs ({conf_id_tag}) for ref and query are:"
-                        f"\n{ref_id}\n{que_id}."
-                    )
+
+                #ez same edit here: if not aligned report and skip instead of crashing
+                try:
+                    while ref_id != que_id:
+                        '''raise ValueError(
+                            "ERROR: Conformers not aligned in iteration"
+                            f" for mol: '{rmol_name}'. The conformer "
+                            f"IDs ({conf_id_tag}) for ref and query are:"
+                            f"\n{ref_id}\n{que_id}."
+                        )'''
+                        print(f"{rmol_name} conformer {conf_id_tag} not aligned ref{ref_id} que{que_id} in {sdf_que}, skipped")
+                        ref_conf = next(rciter)
+                        ref_id = oechem.OEGetSDData(ref_conf, conf_id_tag)
+                        que_id = oechem.OEGetSDData(que_conf, conf_id_tag)
+                except StopIteration:
+                    continue
 
                 # note the smiles id
                 smi_en[rmol_name].append(ref_id)
 
                 # get energies
-                #print("YTORFBGHKTGRJEFDOV", tag_ref, ref_conf, (oechem.OEGetSDData(ref_conf, tag_ref)))
+                #print("YTORFBGHKTGRJEFDOV", rmol_name, tag_ref, ref_conf, (oechem.OEGetSDData(ref_conf, tag_ref)))
                 ref_en[rmol_name].append(float(oechem.OEGetSDData(ref_conf, tag_ref)))
                 que_en[rmol_name].append(float(oechem.OEGetSDData(que_conf, tag_que)))
 
@@ -275,7 +292,7 @@ def compare_ffs(in_dict, conf_id_tag, out_prefix, keep_ref_conf=False, mol_slice
             tfds_mol = tfd_en[name]
             smiles_mol = smi_en[name]
 
-            print(">>>>>>>>>>", enes_ref)
+            print(">>>>>>>>>>", rmsds_mol)
             # compute relative energies against lowest E reference conformer
             lowest_ref_idx = enes_ref.index(min(enes_ref))
             rel_enes_ref = np.array(enes_ref) - enes_ref[lowest_ref_idx]
@@ -310,6 +327,7 @@ def compare_ffs(in_dict, conf_id_tag, out_prefix, keep_ref_conf=False, mol_slice
     return enes_full, rmsds_full, tfds_full, smiles_full
 
 
+
 def flatten(list_of_lists):
     """
     Flatten one level of nesting.
@@ -323,7 +341,6 @@ def flatten(list_of_lists):
     1D numpy array
 
     """
-    print(list_of_lists)
     return np.concatenate(list_of_lists).ravel()
 
 
@@ -394,9 +411,8 @@ def draw_scatter(
     #    plt.yscale('symlog')
 
     plt.savefig(out_file, bbox_inches="tight")
-    if PLOTSHOW:
-        plt.show()
     plt.clf()
+    # plt.show()
 
 
 def draw_corr(
@@ -463,9 +479,8 @@ def draw_corr(
             p.set_sizes([4.0])
 
     plt.savefig(out_file, bbox_inches="tight")
-    if PLOTSHOW:
-        plt.show()
     plt.clf()
+    # plt.show()
 
 
 def draw_ridgeplot(
@@ -689,9 +704,8 @@ def draw_ridgeplot(
 
     # save with transparency for overlapping plots
     plt.savefig(out_file, transparent=True, bbox_inches="tight")
-    if PLOTSHOW:
-        plt.show()
     plt.clf()
+    # plt.show()
 
 
 def draw_density2d(
@@ -754,9 +768,8 @@ def draw_density2d(
         cb.ax.set_title("counts", size=labelsize)
 
         plt.savefig(fname, bbox_inches="tight")
-        if PLOTSHOW:
-            plt.show()
         plt.clf()
+        # plt.show()
 
     fig = plt.gcf()
     if what_for == "paper":
@@ -848,31 +861,6 @@ def draw_density2d(
     # configure color bar and finish plotting
     colorbar_and_finish(size1, out_file)
 
-def compare_ffs2():
-    data = None
-    # loading pickle file
-    with open('xtb_am1_benchmark.pickle', 'rb') as handle:
-        data = pickle.load(handle)
-    enes_full = []
-    rmsd_full = []
-    smiles_full = []
-    for smi in data.keys():
-        confs = data[smi]["conformer_energy_difference"]
-        deam1 = data[smi]["am1_centered"]
-        dextb = data[smi]["xtb_centered"]
-        rmsd = calc_rmsd(deam1, confs)
-        smiles_full.append([f"{smi}-{i}" for i in range(len(confs))])
-        enes_full.append(confs)
-        rmsd_full.append(rmsd)
-        #for i, en in enumerate(data[smi]["conformer_energy_difference"]):
-
-    enes_full = [enes_full]
-    rmsd_full = [rmsd_full]
-    smiles_full = [smiles_full]
-
-    return enes_full, rmsd_full, enes_full, smiles_full
-
-
 
 def main(in_dict, read_pickle, conf_id_tag, plot=False, mol_slice=None):
     """
@@ -910,11 +898,9 @@ def main(in_dict, read_pickle, conf_id_tag, plot=False, mol_slice=None):
         )
     else:
         # enes_full[i][j][k] = ddE of ith method, jth mol, kth conformer.
-        #ez enes_full, rmsds_full, tfds_full, smiles_full = compare_ffs2()
         enes_full, rmsds_full, tfds_full, smiles_full = compare_ffs(
             in_dict, conf_id_tag, "refdata", False, mol_slice
         )
-        print(enes_full, rmsds_full, smiles_full)
 
         # save results in pickle file
         pickle.dump(
@@ -954,17 +940,13 @@ def main(in_dict, read_pickle, conf_id_tag, plot=False, mol_slice=None):
     # flatten all confs/molecules into same list but keep methods distinct
     # energies and rmsds are now 2d lists
     enes_full = np.array(enes_full)
-    print("vvvvvvvvvvvvvvvvvvvvv")
     print(enes_full)
-    print("^^^^^^^^^^^^^^^^^^^^^")
     #    print(np.isclose(enes_full, np.zeros_like(enes_full)))
     #    print(np.sum(np.argwhere(np.array(enes_full)==0.)))
     print(np.array(enes_full).shape)
 
     for a, b, c in zip(enes_full, rmsds_full, tfds_full):
-        print(np.array(a).shape)
         isclose = np.isclose(flatten(a), np.zeros_like(flatten(a)), rtol=1e-23)
-        print(np.sum(isclose))
         energies.append(flatten(a))
         rmsds.append(flatten(b))
         tfds.append(flatten(c))
@@ -1074,7 +1056,6 @@ def main(in_dict, read_pickle, conf_id_tag, plot=False, mol_slice=None):
             sym_log=False,
         )
 
-        print("BIG RMSDS", method_labels, len(method_labels), len(rmsds), len(energies))
         for i, ml in enumerate(method_labels[1:]):
             draw_density2d(
                 rmsds[i],
@@ -1202,8 +1183,8 @@ if __name__ == "__main__":
 
     # parse arguments
     args = parser.parse_args()
-    #ez if not os.path.exists(args.infile):
-    #ez    parser.error(f"Input file {args.infile} does not exist.")
+    if not os.path.exists(args.infile):
+        parser.error(f"Input file {args.infile} does not exist.")
 
     # suppress the following repeated warning
     # Warning: Using automorph=true and heavyOnly=false in OERMSD.
@@ -1212,9 +1193,7 @@ if __name__ == "__main__":
 
     # read main input file and check that files within exist
     in_dict = reader.read_check_input(args.infile)
-    print(in_dict)
 
     # run main
     print("Log file from compare_ffs.py")
-    #main(in_dict, args.readpickle, args.conftag, args.plot, args.molslice)
-    main(in_dict, False, args.conftag, True, None)
+    main(in_dict, args.readpickle, args.conftag, args.plot, args.molslice)
