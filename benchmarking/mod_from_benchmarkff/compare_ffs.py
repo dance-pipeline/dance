@@ -225,7 +225,10 @@ def compare_ffs(in_dict, conf_id_tag, out_prefix, keep_ref_conf=False, mol_slice
                     f"'{rmol_name}': {rmol_nconfs} nconfs\n"
                     f"'{qmol.GetTitle()}': {qmol.NumConfs()} nconfs"
                 )'''
+                kekw = oechem.OEGetSDData(next(iter(rmol.GetConfs())), conf_id_tag)
                 print(f"{rmol_name} not in {sdf_que}, skipped")
+                with open("skipped.txt", "a") as errlog:
+                    errlog.write(f"{kekw}\t{ff_label}\tmolecule\n")
                 rmol = next(mols_ref)
                 rmol_name = rmol.GetTitle()
                 rmol_nconfs = rmol.NumConfs()
@@ -258,6 +261,8 @@ def compare_ffs(in_dict, conf_id_tag, out_prefix, keep_ref_conf=False, mol_slice
                             f"\n{ref_id}\n{que_id}."
                         )'''
                         print(f"{rmol_name} conformer {conf_id_tag} not aligned ref{ref_id} que{que_id} in {sdf_que}, skipped")
+                        with open("skipped.txt", "a") as errlog:
+                            errlog.write(f"{ref_id}\t{ff_label}\tconformer\n")
                         ref_conf = next(rciter)
                         ref_id = oechem.OEGetSDData(ref_conf, conf_id_tag)
                         que_id = oechem.OEGetSDData(que_conf, conf_id_tag)
