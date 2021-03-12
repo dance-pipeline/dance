@@ -9,7 +9,7 @@ from bokeh.plotting import Figure, output_file, save, show
 from plotmol.plotmol import default_tooltip_template
 
 
-make_scatter = 0
+make_scatter = True
 FILL_ALPHA = 0.05
 
 p = None
