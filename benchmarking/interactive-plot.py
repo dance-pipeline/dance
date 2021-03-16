@@ -200,7 +200,7 @@ if make_scatter:
 
 plt.rcParams["figure.figsize"] = [12,12]
 
-en_vals = np.arange(0,90)
+en_vals = np.arange(0,45)
 xtb_dens = []
 am1_dens = []
 for i,val in enumerate(en_vals):
@@ -221,7 +221,7 @@ plt.clf()
 
 plt.rcParams["figure.figsize"] = [12,12]
 
-en_vals = np.arange(-90,90)
+en_vals = np.arange(-45,45)
 xtb_dens = []
 am1_dens = []
 for i,val in enumerate(en_vals):
