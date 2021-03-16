@@ -211,11 +211,32 @@ xtb_dens = np.array(xtb_dens)/len(en_xtb)
 am1_dens = np.array(am1_dens)/len(en_am1)
 x = plt.plot(en_vals[:-1], xtb_dens)
 a = plt.plot(en_vals[:-1], am1_dens)
-plt.title("Distribution of relative conformer energy error compared to reference QCA energy")
+plt.title("Density of absolute value of relative conformer energy error compared to reference QCA energy")
 plt.legend((x[0],a[0]),("xtb","am1"))
 plt.xlabel("ddE kcal/mol")
-plt.ylabel("% of molecules with |ddE| less than x")
-plt.savefig("energy_dist.png")
+plt.ylabel("% |ddE|")
+plt.savefig("energy_abs_dens.png")
+plt.clf()
+
+
+plt.rcParams["figure.figsize"] = [12,12]
+
+en_vals = np.arange(-90,90)
+xtb_dens = []
+am1_dens = []
+for i,val in enumerate(en_vals):
+    if i==0: continue
+    xtb_dens.append( sum(1 for x in en_xtb if en_vals[i-1] < x < val) )
+    am1_dens.append( sum(1 for a in en_am1 if en_vals[i-1] < a < val) )
+xtb_dens = np.array(xtb_dens)/len(en_xtb)
+am1_dens = np.array(am1_dens)/len(en_am1)
+x = plt.plot(en_vals[:-1], xtb_dens)
+a = plt.plot(en_vals[:-1], am1_dens)
+plt.title("Density of relative conformer energy error compared to reference QCA energy")
+plt.legend((x[0],a[0]),("xtb","am1"))
+plt.xlabel("ddE kcal/mol")
+plt.ylabel("%")
+plt.savefig("energy_dens.png")
 plt.clf()
 
 plt.rcParams["figure.figsize"] = [12,12]
@@ -230,11 +251,11 @@ xtb_rdens = np.array(xtb_rdens)/len(rm_xtb)
 am1_rdens = np.array(am1_rdens)/len(rm_am1)
 x = plt.plot(rm_vals[:-1], xtb_rdens)
 a = plt.plot(rm_vals[:-1], am1_rdens)
-plt.title("Distribution of RMSD to reference QCA conformation from a given method")
+plt.title("Density of RMSD to reference QCA conformation from a given method")
 plt.legend((x[0],a[0]),("xtb","am1"))
 plt.xlabel("RMSD Å")
-plt.ylabel("molecules with RMSD less than x-value, %")
-plt.savefig("rmsd_dist.png")
+plt.ylabel("%")
+plt.savefig("rmsd_dens.png")
 plt.clf()
 
 
