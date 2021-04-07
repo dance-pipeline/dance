@@ -31,11 +31,17 @@ from openforcefield.topology import Molecule, Topology
 # eric zhang feb12 2021
 import qcengine
 import qcelemental as qcel
-from qcelemental.models import AtomicInput
+from qcelemental.models import AtomicInput, OptimizationInput
 from qcelemental.models.common_models import Model
+from qcelemental.models.procedures import QCInputSpecification
 
 # ez mar4 2021
 from openeye import oeff
+
+# ez mar31 2021
+from forcebalance.molecule import Molecule as fb_molecule
+from forcebalance.molecule import get_rotate_translate
+import numpy as np
 
 def run_openmm(topology, system, positions):
     """
@@ -442,28 +448,86 @@ def min_xtb(mol, ofs):
                             input_specification=QCInputSpecification(model=xtb_model),
                             keywords={"coordsys": "tric", "maxiter": 300, "program": "xtb"}
                         )
-
-        opt_result = qcengine.compute_procedure(input_data=geometric_input, procedure="geometric")
+        opt_result = qcengine.compute_procedure(input_data=geometric_input, procedure="geometric",
+		local_options = {"ncores":1})
         opt_energy = opt_result.trajectory[-1].properties.return_energy
 
         # xtb returns energy in hartree
         hartree_to_kcalpmol = qcel.constants.conversion_factor("hartree", "kcal/mol")
+        b2a = qcel.constants.conversion_factor("bohr", "angstrom")
 
         energy = opt_energy * hartree_to_kcalpmol
-        geom = opt_result.final_molecule.geometry
+        geom = opt_result.final_molecule.geometry * b2a
 
+    except AttributeError as ae:
+        print("XTB DID NOT CONVERGE KEANU CHUNGUS")
+        print(mol.GetTitle())
+        print(opt_result.dict())
+        return
     except Exception as e:
         smilabel = oechem.OEGetSDData(oe_mol, "SMILES QCArchive")
         print( ' >>> xtb calculation: something went wrong: '
                f'{oe_mol.GetTitle()} {smilabel}: {e}')
         return
 
+    flatgeom = []
+    for a in geom:
+        flatgeom.extend(a)
     # save geometry, save energy as tag, write mol to file
-    oe_mol.SetCoords(oechem.OEFloatArray(geom))
+    oe_mol.SetCoords(flatgeom)
+
+    # change this to True to align
+    if False:
+        alignedgeom = align(mol, oe_mol, "xtb")
+
+        # save geometry, save energy as tag, write mol to file
+        oe_mol.SetCoords(alignedgeom)
+
     oechem.OESetSDData(oe_mol, "Energy xtb", str(energy))
     oechem.OEWriteConstMolecule(ofs, oe_mol)
 
     return
+
+def align(mol, opt_mol, method):
+    # alignment
+    cc = mol.GetCoords()
+    a = []
+    for i in range(len(cc)):
+        a.append(cc[i])
+    ogcd = np.array(a)
+    
+    cc = opt_mol.GetCoords()
+    a = []
+    for i in range(len(cc)):
+        a.append(cc[i])
+    geom = np.array(a)
+
+    xyzs = [ogcd.copy(), geom.copy()]
+    _align(xyzs)
+
+    alignedgeom = xyzs[1]
+    flatageom = []
+    for a in alignedgeom:
+        flatageom.extend(a)
+
+    return flatageom
+
+def _align(xyzs):
+    """ Align molecules.
+    adapted from leeping/forcebalance/src/molecule.py
+    """
+    xyz1 = xyzs[0]
+
+    for index2, xyz2 in enumerate(xyzs):
+        if index2 == 0: continue
+        xyz2 -= xyz2.mean(0)
+        ref = 0
+
+        tr, rt = get_rotate_translate(xyz2,xyzs[ref])
+
+        xyz2 = np.dot(xyz2, rt) + tr
+        xyzs[index2] = xyz2
+
 
 # eric zhang mar2 2021
 def min_am1(mol, ofs):
@@ -513,6 +577,10 @@ def min_am1(mol, ofs):
                f'{oe_mol.GetTitle()} {smilabel}: {e}')
         return
 
+    # change this to True to align
+    if False:
+        acoords = align(mol, oe_mol, "am1")
+        oe_mol.SetCoords(acoords)
     # save energy as tag, write mol to file
     oechem.OESetSDData(oe_mol, "Energy am1", str(energy))
     oechem.OEWriteConstMolecule(ofs, oe_mol)

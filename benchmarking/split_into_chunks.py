@@ -11,6 +11,8 @@ try:
 except FileExistsError:
     pass
 
+sname, ext = file_to_split.split(".")
+
 # https://stackoverflow.com/questions/16840554/reading-a-line-from-file-without-advancing-pythonic-approach
 def peek_line(f):
     pos = f.tell()
@@ -21,7 +23,7 @@ def peek_line(f):
 with open(file_to_split) as main_file:
     fcount = 0
     while True:
-        fname = direc + "/" + file_to_split + str(fcount)
+        fname = direc + "/" + sname + str(fcount) + "." + ext
         lcount = 1
         peekline = main_file.readline()
         if peekline == "":
